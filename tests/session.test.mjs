@@ -1,0 +1,104 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import M from "../src/domain/session.mjs";
+const now = Date.UTC(2026, 10, 9, 15);
+const agent = { id: "a1", name: "André Silva" };
+const contact = () => ({
+  id: 1,
+  name: "Cliente",
+  sessionState: "open",
+  sessionId: "s1",
+  queueState: "Sem resposta",
+  lastInboundAt: new Date(now).toISOString(),
+});
+test("24h boundary uses the last customer message, and keeps contact data", () => {
+  const c = contact();
+  assert.equal(M.expire([c], now + M.WINDOW_MS - 1), 0);
+  assert.equal(M.expire([c], now + M.WINDOW_MS), 1);
+  assert.equal(c.closedReason, "window_expired");
+  assert.equal(c.name, "Cliente");
+  assert.equal(M.expire([c], now + M.WINDOW_MS + 1), 0);
+});
+test("outgoing messages retain sender identity and do not extend the window", () => {
+  const c = contact();
+  const first = M.send(c, "Olá", agent, now + 1000);
+  agent.name = "Nome alterado";
+  assert.throws(() =>
+    M.send(c, "Bloqueado", { id: "a2", name: "Luiza Fernandes" }, now + 1500),
+  );
+  c.assigneeId = "a2";
+  const other = M.send(
+    c,
+    "Boa tarde",
+    { id: "a2", name: "Luiza Fernandes" },
+    now + 2000,
+  );
+  assert.equal(first.senderName, "André Silva");
+  assert.equal(first.signedText, "André Silva:\nOlá");
+  assert.equal(other.senderId, "a2");
+  assert.equal(c.lastInboundAt, new Date(now).toISOString());
+  assert.equal(M.canReply(c, now + M.WINDOW_MS), false);
+});
+test("closed and expired sessions reject sending including at the exact deadline", () => {
+  const c = contact();
+  assert.throws(() =>
+    M.send(c, "Texto", { id: "a1", name: "André" }, now + M.WINDOW_MS),
+  );
+  M.close(c, "manual", "a1", now + 100);
+  assert.throws(() =>
+    M.send(c, "Texto", { id: "a1", name: "André" }, now + 200),
+  );
+  assert.equal(M.reopen(c, now + 300), true);
+  M.close(c, "manual", "a1", now + 400);
+  assert.equal(M.reopen(c, now + M.WINDOW_MS), false);
+});
+test("new inbound messages reopen the queue and reset customer window", () => {
+  const c = contact();
+  M.expire([c], now + M.WINDOW_MS);
+  const incoming = M.receive(c, "Voltei", now + M.WINDOW_MS + 1000);
+  assert.equal(c.sessionState, "open");
+  assert.equal(c.queueState, "Sem resposta");
+  assert.equal(c.closedReason, undefined);
+  assert.notEqual(c.sessionId, "s1");
+  assert.equal(incoming.direction, "inbound");
+  assert.equal(M.canReply(c, now + M.WINDOW_MS + 2000), true);
+  assert.equal(c.assigneeId, null);
+});
+test("unknown inbound time and missing author cannot authorize a reply", () => {
+  const c = contact();
+  c.lastInboundAt = null;
+  assert.equal(M.canReply(c, now), false);
+  assert.throws(() => M.send(contact(), "Olá", null, now));
+  assert.equal(
+    M.normalize("Histórico antigo").senderName,
+    "Atendente não registrado",
+  );
+});
+
+test("template simulation after expiry does not reopen the free-form window", () => {
+  const c = contact();
+  M.expire([c], now + M.WINDOW_MS);
+  const last = c.lastInboundAt;
+  const message = M.simulateTemplate(
+    c,
+    { id: "t1", title: "Retorno" },
+    "Olá novamente",
+    { id: "a1", name: "André" },
+    true,
+    now + M.WINDOW_MS + 100,
+  );
+  assert.equal(message.type, "template");
+  assert.equal(message.delivery, "simulation");
+  assert.equal(c.sessionState, "closed");
+  assert.equal(c.lastInboundAt, last);
+  assert.equal(M.canReply(c, now + M.WINDOW_MS + 101), false);
+  assert.throws(() =>
+    M.simulateTemplate(
+      c,
+      { id: "t1" },
+      "Oi",
+      { id: "a1", name: "André" },
+      false,
+    ),
+  );
+});

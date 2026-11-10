@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "public/pdf-assets": true
+  },
+  "search.exclude": {
+    "**/legacy": true,
+    "**/dist": true,
+    "public/pdf-assets": true
+  }
+}

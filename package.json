@@ -1,0 +1,30 @@
+{
+  "name": "zapcaster",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "node prepare-react-runtime.cjs",
+    "dev": "vite",
+    "start": "npm run dev",
+    "prebuild": "node prepare-react-runtime.cjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "npm run build",
+    "test": "node --test tests/*.test.mjs && vitest run",
+    "format": "prettier --write src tests vite.config.mjs"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.9",
+    "@vitejs/plugin-react": "^6.3.0",
+    "jsdom": "^31.0.0",
+    "prettier": "^3.9.10",
+    "vite": "^8.3.7",
+    "vitest": "^5.1.0"
+  }
+}

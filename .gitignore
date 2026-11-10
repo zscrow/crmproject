@@ -1,0 +1,17 @@
+node_modules/
+*.log
+.reference/
+.test-assets/
+.runtime/
+
+dist/
+public/pdf-assets/
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+

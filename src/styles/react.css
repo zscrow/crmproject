@@ -1,0 +1,654 @@
+.react-form {
+  display: grid;
+  gap: 16px;
+}
+.react-field {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+}
+.react-form input:not([type="checkbox"]),
+.react-form textarea,
+.react-form select {
+  width: 100%;
+  border: 1px solid var(--border, #ccd3df);
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: var(--surface, #fff);
+  color: var(--text, #253044);
+  font: inherit;
+}
+.react-form fieldset {
+  border: 1px solid var(--border, #ccd3df);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+.react-check {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.react-check input {
+  width: 18px;
+  height: 18px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+.react-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.react-details dt {
+  color: var(--muted);
+}
+.react-details dd {
+  margin: 0;
+  font-weight: 600;
+}
+.template-preview {
+  white-space: pre-wrap;
+  background: var(--bg, #edf0f5);
+  border: 1px solid var(--border, #ccd3df);
+  padding: 16px;
+  border-radius: 12px;
+}
+.form-error {
+  color: #c84646;
+}
+.react-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #e9edf3;
+  color: #263047;
+  display: flex;
+  flex-direction: column;
+}
+.react-viewer > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #ccd3df;
+}
+.react-viewer > header > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.react-viewer small {
+  display: block;
+  color: #69758b;
+  margin-top: 5px;
+}
+.react-viewer-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.react-viewer-body > aside {
+  width: 230px;
+  overflow: auto;
+  padding: 12px;
+  border-right: 1px solid #ccd3df;
+}
+.react-viewer-body > aside button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  overflow-wrap: anywhere;
+  border-radius: 9px;
+}
+.react-viewer-body > aside button.active {
+  background: #d6dfee;
+  color: #253f85;
+}
+.react-viewer-body > section {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.react-viewer-body > section > img,
+.react-viewer-body video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.react-viewer-body pre {
+  white-space: pre-wrap;
+  align-self: start;
+}
+.react-viewer > footer {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 12px;
+  background: #fff;
+  margin: 0;
+  border-top: 1px solid #ccd3df;
+}
+.react-pdf {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  text-align: center;
+}
+.pdf-controls {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  z-index: 1;
+  border-radius: 9px;
+  margin-bottom: 12px;
+}
+.pdf-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ccd3df;
+  border-radius: 7px;
+  background: #edf0f5;
+}
+.react-pdf canvas {
+  background: #fff;
+  box-shadow: 0 2px 16px #0002;
+}
+.modal-backdrop {
+  z-index: 2000;
+}
+.modal {
+  max-height: 90vh;
+  overflow: auto;
+}
+.unsaved-guard {
+  padding: 18px;
+  background: var(--surface, #fff);
+  border: 2px solid #d69b3b;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+.unsaved-guard > div {
+  display: flex;
+  gap: 10px;
+}
+.skip-link {
+  position: fixed;
+  left: 10px;
+  top: -100px;
+  z-index: 4000;
+}
+.skip-link:focus {
+  top: 10px;
+  background: white;
+  padding: 10px;
+}
+.react-viewer button:disabled {
+  opacity: 0.45;
+}
+.react-viewer audio {
+  width: min(600px, 95%);
+}
+@media (max-width: 700px) {
+  .react-viewer-body > aside {
+    width: 110px;
+    font-size: 12px;
+  }
+  .react-viewer > header {
+    padding: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .react-viewer-body > section {
+    padding: 8px;
+  }
+  .react-details {
+    grid-template-columns: 1fr;
+  }
+  .modal {
+    width: calc(100vw - 24px);
+  }
+}
+/* Navy identity: white surfaces on a pale blue workspace. */
+:root {
+  --green: #123f78;
+  --ink: #142d4f;
+  --muted: #526781;
+  --border: #c4d2e2;
+  --bg: #e3ebf5;
+  --soft: #dbe8f8;
+  --surface: #fff;
+  --text: #142d4f;
+}
+html:not([data-theme="dark"])
+  :is(
+    .surface,
+    .contacts-panel,
+    .contact-card,
+    .modal,
+    .service-tile,
+    .conversation-list,
+    .conversation-header,
+    .customer-panel,
+    .compact-composer,
+    .closed-composer,
+    .topbar
+  ) {
+  background: #fff;
+}
+.sidebar {
+  background: #09254b;
+  border-color: #183b66;
+}
+.sidebar .workspace,
+.sidebar .connection {
+  background: #10325c;
+  border-color: #294b77;
+}
+.sidebar .workspace-logo {
+  background: #244b7b;
+}
+.sidebar .nav-item.active {
+  background: #204f86;
+  box-shadow: inset 3px 0 #a4cbff;
+}
+.sidebar .nav-item:hover {
+  background: #183d6c;
+}
+.sidebar .user {
+  border-color: #294b77;
+}
+.brand {
+  font-weight: 750;
+  letter-spacing: -0.8px;
+  gap: 10px;
+}
+.brand .brand-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px 12px 12px 3px;
+  background: #fff;
+  color: #123f78;
+  font-size: 25px;
+  font-weight: 850;
+  font-style: normal;
+  letter-spacing: -2px;
+  box-shadow: 0 2px 10px #0002;
+}
+html:not([data-theme="dark"])
+  :is(
+    .primary,
+    .sector-quickbar button.active,
+    .message-library-tabs button.active,
+    .audit-tabs button.active
+  ) {
+  background: #123f78;
+  border-color: #123f78;
+  color: #fff;
+}
+html[data-theme="dark"] {
+  --green: #9cc8ff;
+  --ink: #edf4ff;
+  --muted: #afc1da;
+  --border: #29415f;
+  --bg: #060f20;
+  --soft: #142943;
+  --surface: #0e1e35;
+  --text: #edf4ff;
+}
+html[data-theme="dark"]
+  :is(
+    .sidebar,
+    .topbar,
+    .surface,
+    .contacts-panel,
+    .contact-card,
+    .modal,
+    .conversation-layout,
+    .conversation-list,
+    .conversation-header,
+    .signed-composer,
+    .closed-composer,
+    .customer-panel,
+    .demo-simulator,
+    .service-card,
+    .team-explanation,
+    .service-tile,
+    .compact-composer,
+    .audit-table-wrap
+  ) {
+  background: #0e1e35;
+  border-color: #29415f;
+  color: #edf4ff;
+}
+html[data-theme="dark"] .sidebar {
+  background: #040e20;
+  border-color: #203652;
+}
+html[data-theme="dark"] .sidebar :is(.workspace, .connection) {
+  background: #0d223e;
+  border-color: #263f60;
+}
+html[data-theme="dark"] .sidebar .nav-item.active {
+  background: #173d6b;
+}
+html[data-theme="dark"] .sidebar .nav-item:hover {
+  background: #102d50;
+}
+html[data-theme="dark"] .brand .brand-icon {
+  background: #b9d9ff;
+  color: #082347;
+}
+html[data-theme="dark"]
+  :is(
+    .service-tabs,
+    .conversation-window,
+    .ownership-controls,
+    .conversation-messages,
+    .conversation-main,
+    .library-info,
+    .template-preview,
+    .react-field input,
+    .react-field textarea,
+    .react-field select
+  ) {
+  background: #0a192e;
+  border-color: #29415f;
+  color: #dbe9fc;
+}
+html[data-theme="dark"]
+  :is(
+    .sector-quickbar button,
+    .secondary,
+    .service-search,
+    .queue-sort-control select,
+    .unanswered-filter,
+    .agent-switcher select,
+    .message-library-tabs button,
+    .audit-tabs button,
+    .inbox-search,
+    .compact-compose-row textarea
+  ) {
+  background: #122943;
+  border-color: #345174;
+  color: #e4efff;
+}
+html[data-theme="dark"]
+  :is(
+    .sector-quickbar button.active,
+    .service-tabs button.active,
+    .message-library-tabs button.active,
+    .audit-tabs button.active
+  ) {
+  background: #244e7e;
+  border-color: #416e9e;
+  color: #fff;
+}
+html[data-theme="dark"] .message-bubble.received {
+  background: #152d49;
+  border-color: #345174;
+}
+html[data-theme="dark"] .message-bubble.sent {
+  background: #193d68;
+  border-color: #365f8d;
+}
+.reply-message-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 7px auto;
+  color: var(--ink);
+  font-size: 11px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #ffffff60;
+  min-height: 30px;
+}
+.quoted-message,
+.reply-preview {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  border-left: 4px solid #4d8bd4;
+  background: #e1ecfa;
+  color: #183d68;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 6px 0 10px;
+  gap: 12px;
+  min-width: 0;
+}
+.quoted-message {
+  flex-direction: column;
+  gap: 4px;
+}
+.quoted-message span {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  max-height: 70px;
+  overflow: hidden;
+}
+.quoted-message b {
+  font-size: 12px;
+}
+.reply-preview > div {
+  flex: 1;
+  min-width: 0;
+}
+.reply-preview small {
+  font-weight: 650;
+}
+.reply-preview p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  max-height: 62px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.reply-preview > button {
+  align-self: center;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 22px;
+  border-radius: 8px;
+}
+.command-suggestions {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  margin: 0 0 10px;
+  box-shadow: 0 -4px 18px #0001;
+  overflow: hidden;
+}
+.command-suggestions header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.command-suggestions header small {
+  color: var(--muted);
+}
+.command-suggestions [role="listbox"] {
+  max-height: 225px;
+  overflow: auto;
+}
+.command-suggestions [role="option"] {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.command-suggestions [role="option"] > b {
+  min-width: 90px;
+  color: var(--green);
+}
+.command-suggestions [role="option"] > span {
+  min-width: 0;
+  font-size: 12px;
+}
+.command-suggestions [role="option"] small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  margin-top: 4px;
+  max-width: 420px;
+}
+.command-suggestions [role="option"][aria-selected="true"],
+.command-suggestions [role="option"]:hover {
+  background: var(--soft);
+}
+.command-suggestions > p {
+  padding: 12px;
+  font-size: 12px;
+}
+html[data-theme="dark"] :is(.quoted-message, .reply-preview) {
+  background: #152f50;
+  color: #dfecff;
+  border-color: #87b9fb;
+}
+html[data-theme="dark"] .reply-message-button {
+  background: #132c48;
+  color: #dfecff;
+}
+@media (max-width: 600px) {
+  .command-suggestions header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .command-suggestions [role="option"] small {
+    max-width: 180px;
+  }
+}
+.compact-composer > .command-suggestions {
+  display: block;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  z-index: 30;
+}
+.compact-composer > .command-suggestions header {
+  align-items: center;
+}
+.compact-composer > .reply-preview {
+  align-items: center;
+}
+/* Discreet quote action below message content. */
+.message-bubble {
+  position: relative;
+}
+.message-bubble:has(.reply-message-button) {
+  padding-bottom: 27px;
+}
+.message-bubble .reply-message-button {
+  position: absolute;
+  bottom: 5px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin: 0;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--ink);
+  border: 0;
+  background: transparent;
+  opacity: 0.6;
+}
+.message-bubble .reply-message-button:hover {
+  background: var(--soft);
+  border-color: #6d9bd1;
+}
+.message-bubble .reply-message-button:focus-visible {
+  outline: 2px solid #78acfa;
+  outline-offset: 2px;
+}
+.service-toolbar .mine-filter {
+  white-space: nowrap;
+}
+
+.message-bubble .reply-message-button:hover,
+.message-bubble .reply-message-button:focus-visible {
+  opacity: 1;
+}
+html[data-theme="dark"] .message-bubble .reply-message-button {
+  background: transparent;
+  border: 0;
+  color: #c5dafa;
+}
+.conversation-day {
+  position: relative;
+  display: flow-root;
+  padding-bottom: 4px;
+}
+.conversation-day-label {
+  position: static;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  margin: 0 0 17px;
+  padding: 5px 0 9px;
+}
+.conversation-day-label > span {
+  background: #e5edf7;
+  color: #365374;
+  border: 1px solid #c6d5e5;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 7px #0000000d;
+}
+html[data-theme="dark"] .conversation-day-label > span {
+  background: #1c3553;
+  color: #dfebfa;
+  border-color: #355271;
+  box-shadow: 0 2px 9px #0003;
+}
+.conversation-history {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 80px;
+  min-width: 0;
+  overflow: hidden;
+}
+.conversation-history > .conversation-messages {
+  min-height: 0;
+  padding-top: 20px;
+}
