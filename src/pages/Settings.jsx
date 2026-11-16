@@ -91,10 +91,12 @@ export default function Settings() {
         <div className="integration">
           <h3>WhatsApp Business Platform</h3>
           <p>
-            A integração oficial ainda não está conectada. Credenciais,
-            webhooks, autenticação e envio real serão conectados ao back-end.
+            O receptor de webhooks está disponível em /webhooks/whatsapp.
+            Configure a URL HTTPS pública e o token de verificação no painel da
+            Meta e assine o campo messages. Os eventos são armazenados no
+            servidor; as conversas desta demonstração continuam locais.
           </p>
-          <span className="tag lead">Não conectado</span>
+          <span className="tag lead">Ativação na Meta pendente</span>
         </div>
       </form>
     </>

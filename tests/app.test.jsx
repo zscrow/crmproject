@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   render,
   screen,
@@ -14,6 +14,70 @@ const mount = () => {
   render(<App store={store} />);
   return store;
 };
+it.each([/← Atendimentos/, /Finalizar atendimento/])(
+  "waits for the whole conversation to finish closing via %s",
+  (buttonName) => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    try {
+      const store = mount();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: buttonName }));
+      const layout = document.querySelector(".conversation-layout");
+      expect(layout.classList.contains("conversation-closing")).toBe(true);
+      expect(layout.hasAttribute("inert")).toBe(true);
+      expect(layout.querySelector(".conversation-list")).toBeTruthy();
+      // React uses the WebKit event in jsdom, which lacks AnimationEvent.
+      const eventType =
+        "AnimationEvent" in window ? "animationend" : "webkitAnimationEnd";
+      const exitEvent = () =>
+        Object.assign(new Event(eventType, { bubbles: true }), {
+          animationName: "conversation-exit",
+        });
+      fireEvent(layout.querySelector(".conversation-main"), exitEvent());
+      expect(document.querySelector(".conversation-layout")).toBe(layout);
+      fireEvent(layout, exitEvent());
+      expect(document.querySelector(".conversation-layout")).toBeNull();
+      expect(document.querySelector(".service-heading")).toBeTruthy();
+      if (buttonName.source.includes("Finalizar"))
+        expect(store.getSnapshot().contacts[0].sessionState).toBe("closed");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);
+it("returns immediately when motion is reduced", () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
+  try {
+    mount();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /← Atendimentos/ }));
+    expect(document.querySelector(".conversation-layout")).toBeNull();
+    expect(document.querySelector(".service-heading")).toBeTruthy();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+it("completes navigation if the exit animation event is missing", async () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  try {
+    mount();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Clientes", exact: true }));
+    expect(document.querySelector(".conversation-closing")).toBeTruthy();
+    await waitFor(() =>
+      expect(document.querySelector(".conversation-layout")).toBeNull(),
+    );
+    expect(screen.getByRole("button", { name: "Novo contato" })).toBeTruthy();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 describe("React CRM flows", () => {
   it("opens a whole attendance card and expands /ola as typed without submitting", () => {
     const store = mount();

@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "zapcaster-webhook",
+  "account_id": "24d9156222e0e54b842239ca2f21b559",
+  "main": "server/cloudflare/worker.mjs",
+  "compatibility_date": "2026-11-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "secrets": {
+    "required": ["WHATSAPP_VERIFY_TOKEN", "META_APP_SECRET"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zapcaster-webhooks",
+      "migrations_dir": "server/cloudflare/migrations",
+      "database_id": "5dd7b8f0-987b-440e-9032-bd351f81c477",
+    },
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+    },
+  },
+}

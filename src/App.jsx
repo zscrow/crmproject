@@ -19,9 +19,20 @@ function UiProvider({ children }) {
     [selected, setSelected] = useState(null),
     [dialog, setDialog] = useState(null),
     [viewer, setViewer] = useState(null),
+    [conversationClosing, setConversationClosing] = useState(false),
     [toast, setToast] = useState("");
   const timer = useRef(),
+    navigationTimer = useRef(),
+    pendingPage = useRef(null),
     drafts = useRef({});
+  const finishNavigation = useCallback(() => {
+    if (pendingPage.current === null) return;
+    clearTimeout(navigationTimer.current);
+    setPage(pendingPage.current);
+    pendingPage.current = null;
+    setConversationClosing(false);
+    window.scrollTo(0, 0);
+  }, []);
   const notify = useCallback((message) => {
     clearTimeout(timer.current);
     setToast(message);
@@ -38,6 +49,9 @@ function UiProvider({ children }) {
         )
       )
         return notify("Seu perfil não tem acesso a esse setor.");
+      clearTimeout(navigationTimer.current);
+      pendingPage.current = null;
+      setConversationClosing(false);
       setSelected(id);
       setPage("conversation");
       setDialog(null);
@@ -45,11 +59,34 @@ function UiProvider({ children }) {
     },
     [store, notify],
   );
-  const navigate = useCallback((next) => {
-    setPage(next);
-    setDialog(null);
-    window.scrollTo(0, 0);
-  }, []);
+  const navigate = useCallback(
+    (next) => {
+      setDialog(null);
+      const snapshot = store.getSnapshot();
+      const actor = snapshot.team.find((a) => a.id === snapshot.activeAgentId);
+      const contact = snapshot.contacts.find((c) => c.id === selected);
+      if (
+        page === "conversation" &&
+        next !== "conversation" &&
+        contact &&
+        Crm.canViewContact(actor, contact) &&
+        window.matchMedia?.("(prefers-reduced-motion: no-preference)").matches
+      ) {
+        pendingPage.current = next;
+        setConversationClosing(true);
+        clearTimeout(navigationTimer.current);
+        // Complete navigation even if the browser does not emit animationend.
+        navigationTimer.current = setTimeout(finishNavigation, 350);
+        return;
+      }
+      clearTimeout(navigationTimer.current);
+      pendingPage.current = null;
+      setConversationClosing(false);
+      setPage(next);
+      window.scrollTo(0, 0);
+    },
+    [page, selected, store, finishNavigation],
+  );
   useEffect(() => {
     document.body.style.overflow = dialog || viewer ? "hidden" : "";
     return () => {
@@ -59,6 +96,7 @@ function UiProvider({ children }) {
   useEffect(
     () => () => {
       clearTimeout(timer.current);
+      clearTimeout(navigationTimer.current);
       for (const draft of Object.values(drafts.current))
         for (const file of draft.files || [])
           URL.revokeObjectURL(file.previewUrl);
@@ -68,6 +106,8 @@ function UiProvider({ children }) {
   const value = {
     page,
     navigate,
+    conversationClosing,
+    finishNavigation,
     selected,
     setSelected,
     dialog,
