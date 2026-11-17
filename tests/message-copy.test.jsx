@@ -22,10 +22,14 @@ test("copies only message text with original newlines and displays internal read
     };
     const view = render(
       <UiContext.Provider value={{ notify }}>
-        <Message message={message} contactId={1} />
+        <Message message={message} contactId={1} onReply={() => {}} />
       </UiContext.Provider>,
     );
     expect(screen.getByText("Não lida")).toBeDefined();
+    const copy = screen.getByRole("button", { name: "Copiar mensagem" });
+    const reply = screen.getByRole("button", { name: /Responder citando/ });
+    expect(copy.textContent).toBe("");
+    expect(copy.compareDocumentPosition(reply) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith("Primeira linha\nSegunda linha"),

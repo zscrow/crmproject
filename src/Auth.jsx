@@ -49,7 +49,7 @@ export function AccountControls() {
   }
   return (
     <div className="account-controls">
-      <span>{session.user.email}</span>
+      <span>{session.user.username || session.user.email}</span>
       <button className="secondary" onClick={() => setEditing(!editing)}>
         Alterar senha
       </button>
@@ -103,7 +103,6 @@ export function AccountControls() {
 export default function Auth() {
   const [user, setUser] = useState(null),
     [loading, setLoading] = useState(true),
-    [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -148,10 +147,7 @@ export default function Auth() {
     setBusy(true);
     setError("");
     try {
-      const result = await auth(
-        register ? "register" : "login",
-        Object.fromEntries(form),
-      );
+      const result = await auth("login", Object.fromEntries(form));
       setUser(result.user);
     } catch (err) {
       setError(err.message);
@@ -190,47 +186,17 @@ export default function Auth() {
       <main className="auth-main">
         <form className="auth-card" onSubmit={submit}>
           <span className="auth-eyebrow">BEM-VINDO AO KLIVO</span>
-          <h2>{register ? "Crie sua conta" : "Bom ter você por aqui."}</h2>
-          <p>
-            {register
-              ? "Crie um espaço de trabalho para sua empresa."
-              : "Entre para acessar seu espaço de trabalho."}
-          </p>
-          {register && (
-            <>
-              <label>
-                Seu nome
-                <input
-                  name="name"
-                  autoComplete="name"
-                  required
-                  minLength={2}
-                  maxLength={100}
-                />
-              </label>
-              <label>
-                Nome da empresa ou projeto
-                <input
-                  name="company"
-                  autoComplete="organization"
-                  required
-                  minLength={2}
-                  maxLength={100}
-                />
-              </label>
-            </>
-          )}
+          <h2>Bom ter você por aqui.</h2>
+          <p>Entre para acessar seu espaço de trabalho.</p>
           <label>
-            {register ? "E-mail" : "E-mail ou usuário"}
+            E-mail ou usuário
             <input
               name="email"
-              type={register ? "email" : "text"}
+              type="text"
               autoComplete="username"
               required
               maxLength={254}
-              placeholder={
-                register ? "voce@empresa.com" : "Seu e-mail ou usuário"
-              }
+              placeholder="Seu e-mail ou usuário"
             />
           </label>
           <label>
@@ -238,35 +204,22 @@ export default function Auth() {
             <input
               name="password"
               type="password"
-              autoComplete={register ? "new-password" : "current-password"}
+              autoComplete="current-password"
               required
-              minLength={register ? 12 : 1}
+              minLength={1}
               maxLength={128}
             />
           </label>
-          {register && <small>Use pelo menos 12 caracteres.</small>}
           {error && (
             <p className="auth-error" role="alert">
               {error}
             </p>
           )}
           <button className="auth-submit" disabled={busy}>
-            {busy ? "Aguarde…" : register ? "Criar conta" : "Entrar no Klivo"}
-          </button>
-          <button
-            className="auth-switch"
-            type="button"
-            onClick={() => {
-              setRegister(!register);
-              setError("");
-            }}
-          >
-            {register
-              ? "Já tem uma conta? Entrar"
-              : "Primeira vez aqui? Criar conta"}
+            {busy ? "Aguarde…" : "Entrar no Klivo"}
           </button>
           <p className="auth-legal">
-            Ao criar sua conta, você concorda com os{" "}
+            Ao acessar, você concorda com os{" "}
             <a href="/termos.html">Termos de uso</a>. Consulte a{" "}
             <a href="/privacidade.html">Política de privacidade</a>.
           </p>

@@ -78,7 +78,7 @@ test("unified transfer rejects assigning a person without sector access", () => 
   C.transfer(c, "Arte", "", { team, sectors });
   assert.equal(c.assigneeId, null);
 });
-test("visual statuses distinguish pending, current, ending and closed sessions", () => {
+test("visual statuses prioritize expiry over unread messages and keep read messages green", () => {
   const now = Date.now(),
     c = {
       sessionState: "open",
@@ -86,11 +86,15 @@ test("visual statuses distinguish pending, current, ending and closed sessions",
       waitingSince: null,
     };
   assert.equal(C.cardState(c, now), "current");
-  c.waitingSince = new Date(now).toISOString();
+  c.unreadCount = 1;
   assert.equal(C.cardState(c, now), "waiting");
-  c.waitingSince = null;
+  c.unreadCount = 0;
+  c.waitingSince = new Date(now).toISOString();
   c.lastInboundAt = new Date(now - 23 * 3600000).toISOString();
-  assert.equal(C.cardState(c, now), "ending");
+  assert.equal(C.cardState(c, now), "current");
+  c.unreadCount = 2;
+  c.lastInboundAt = new Date(now - 24 * 3600000).toISOString();
+  assert.equal(C.cardState(c, now), "closed");
   c.sessionState = "closed";
   assert.equal(C.cardState(c, now), "closed");
 });

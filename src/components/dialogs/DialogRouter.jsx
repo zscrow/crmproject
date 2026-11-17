@@ -1,3 +1,4 @@
+import MetaTemplateDialog from "../MetaTemplates.jsx";
 import { useState } from "react";
 import Modal, { ModalClose } from "../Modal.jsx";
 import { useCrm, useUi } from "../../context.jsx";
@@ -11,7 +12,7 @@ const Field = ({ label, children }) => (
   </label>
 );
 export default function DialogRouter() {
-  const { state, actions, actor, visible } = useCrm(),
+  const { state, actions, actor, visible, store } = useCrm(),
     ui = useUi(),
     d = ui.dialog;
   if (!d) return null;
@@ -23,6 +24,8 @@ export default function DialogRouter() {
       ? !Crm.capability(actor, "editTemplates")
       : false;
   if (restricted) return null;
+  if (d.type === "whatsapp" && store.cloud)
+    return <MetaTemplateDialog key={String(c.id)} contact={c} />;
   return (
     <Dialog
       key={`${d.type}-${d.contactId || d.id || "new"}-${actor.id}`}

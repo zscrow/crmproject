@@ -15,7 +15,7 @@ fs.writeFileSync(
 const quote = (value) => "'" + String(value).replaceAll("'", "''") + "'";
 const salt = randomToken(),
   hash = await hashPassword(local.KLIVO_ADMIN_PASSWORD, salt);
-const sql = `INSERT OR IGNORE INTO klivo_users (id,email,name,company,password_hash,salt,role,created_at) VALUES (${[crypto.randomUUID(), local.KLIVO_ADMIN_EMAIL, "André Saulo", "Klivo", hash, salt, "owner", Date.now()].map(quote).join(",")});`;
+const sql = `INSERT OR IGNORE INTO klivo_users (id,email,name,company,password_hash,salt,role,created_at,username) VALUES (${[crypto.randomUUID(), local.KLIVO_ADMIN_EMAIL, "André Saulo", "Klivo", hash, salt, "owner", Date.now()].map(quote).join(",")},${local.KLIVO_ADMIN_USERNAME ? quote(local.KLIVO_ADMIN_USERNAME) : "NULL"});`;
 fs.mkdirSync(".runtime", { recursive: true });
 const file = ".runtime/bootstrap-owner.sql";
 fs.writeFileSync(file, sql, { mode: 0o600 });

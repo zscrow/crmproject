@@ -1,11 +1,10 @@
 import React from "react";
 import { test, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import Auth from "../src/Auth.jsx";
 import { initialState } from "../src/store.mjs";
 afterEach(() => vi.unstubAllGlobals());
-test("signed-out visitors see login and can switch to registration", async () => {
+test("signed-out visitors see login without public registration", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
@@ -16,11 +15,9 @@ test("signed-out visitors see login and can switch to registration", async () =>
   render(<Auth />);
   await screen.findByRole("button", { name: "Entrar no Klivo" });
   expect(screen.queryByText("Atendente · demo")).toBeNull();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Primeira vez aqui? Criar conta" }),
-  );
-  expect(screen.getByLabelText("Seu nome")).toBeDefined();
-  expect(screen.getByLabelText("Nome da empresa ou projeto")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /Criar conta/ })).toBeNull();
+  expect(screen.queryByLabelText("Seu nome")).toBeNull();
+  expect(screen.getByLabelText("E-mail ou usuário")).toBeDefined();
 });
 test("restored sessions render their account even when the demo agent is staff", async () => {
   localStorage.setItem(

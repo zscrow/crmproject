@@ -122,28 +122,6 @@ export default function Message({ message, contactId, messageId, onReply }) {
             : "Registro anterior"}
         </time>
       </div>
-      {onReply && (
-        <button
-          className="reply-message-button"
-          aria-label={`Responder citando mensagem de ${m.senderName || "atendente"}`}
-          title="Responder citando"
-          onClick={onReply}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="m9 5-6 6 6 6M3 11h10a7 7 0 0 1 7 7" />
-          </svg>
-        </button>
-      )}
       {m.replyTo && (
         <button
           className="quoted-message"
@@ -168,7 +146,12 @@ export default function Message({ message, contactId, messageId, onReply }) {
       )}
       {m.type === "template" && (
         <div className="template-message-label">
-          Modelo WhatsApp · simulação
+          {m.source === "whatsapp"
+            ? "Modelo WhatsApp · " +
+              (m.templateName || "") +
+              " · " +
+              (m.templateLanguage || "")
+            : "Modelo WhatsApp · simulação"}
         </div>
       )}
       {text && <p>{text}</p>}
@@ -180,6 +163,27 @@ export default function Message({ message, contactId, messageId, onReply }) {
           sender={m.senderName}
         />
       ))}
+      {m.direction === "outbound" && m.source === "whatsapp" && (
+        <div
+          className={
+            "message-delivery " +
+            (m.delivery === "failed" ? "delivery-failed" : "")
+          }
+          role={m.delivery === "failed" ? "alert" : "status"}
+        >
+          {{
+            sending: "Envio em processamento · sem confirmação",
+            unknown:
+              "Envio sem confirmação · confira antes de tentar novamente",
+            accepted: "Aceita pela Meta · aguardando entrega",
+            sent: "Enviada",
+            delivered: "Entregue",
+            read: "Lida pelo destinatário",
+            failed: "Não entregue",
+          }[m.delivery] || "Aguardando confirmação"}
+          {m.deliveryError && <span>{m.deliveryError}</span>}
+        </div>
+      )}
       <div className="message-footer-actions">
         {m.direction === "inbound" && Object.hasOwn(m, "viewedAt") && (
           <span className={m.viewedAt ? "message-viewed" : "message-unviewed"}>
@@ -191,6 +195,9 @@ export default function Message({ message, contactId, messageId, onReply }) {
             type="button"
             className="copy-message-button"
             aria-label="Copiar mensagem"
+            title={
+              copyState === "copied" ? "Mensagem copiada" : "Copiar mensagem"
+            }
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(text);
@@ -201,7 +208,48 @@ export default function Message({ message, contactId, messageId, onReply }) {
               }
             }}
           >
-            {copyState === "copied" ? "Copiada" : "Copiar"}
+            <svg
+              viewBox="0 0 24 24"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {copyState === "copied" ? (
+                <path d="m5 12 4 4L19 6" />
+              ) : (
+                <>
+                  <rect x="8" y="8" width="12" height="13" rx="2" />
+                  <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                </>
+              )}
+            </svg>
+          </button>
+        )}
+        {onReply && (
+          <button
+            className="reply-message-button"
+            aria-label={`Responder citando mensagem de ${m.senderName || "atendente"}`}
+            title="Responder citando"
+            onClick={onReply}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 5-6 6 6 6M3 11h10a7 7 0 0 1 7 7" />
+            </svg>
           </button>
         )}
         {copyState === "error" && (

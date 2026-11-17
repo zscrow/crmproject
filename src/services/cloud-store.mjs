@@ -108,12 +108,102 @@ export function createCloudStore(initial) {
   actions.setAgent = () => {
     throw new Error("O atendente é definido pelo login.");
   };
-  for (const name of ["send", "sendTemplate", "receive", "saveProfile"])
+  for (const name of ["receive", "saveProfile"])
     actions[name] = async () => {
       throw new Error(
         "Esta ação depende da próxima etapa da integração. Use a gestão de equipe para alterar acessos.",
       );
     };
+  const attempts = new Map();
+  actions.send = async (
+    contactId,
+    text,
+    attachments = [],
+    expectedAgent,
+    replyId = null,
+  ) => {
+    if (attachments.length)
+      throw new Error("O envio conectado aceita texto nesta etapa.");
+    const workspaceId = cloud.workspace.id;
+    const key = JSON.stringify([workspaceId, contactId, text, replyId]);
+    const operationId = attempts.get(key) || crypto.randomUUID();
+    attempts.set(key, operationId);
+    pending++;
+    emit();
+    try {
+      const data = await workspaceApi("/send", {
+        workspaceId,
+        contactId,
+        text,
+        replyId,
+        operationId,
+      });
+      update(data);
+      attempts.delete(key);
+      emit();
+      return data.result;
+    } catch (error) {
+      if (error.data?.state) update(error.data);
+      if (
+        (error.status && error.status !== 409 && error.status < 500) ||
+        error.data?.result?.status === 502
+      )
+        attempts.delete(key);
+      emit();
+      throw error;
+    } finally {
+      pending--;
+      emit();
+    }
+  };
+  actions.sendTemplate = async (
+    contactId,
+    templateId,
+    values = {},
+    consent = false,
+  ) => {
+    const workspaceId = cloud.workspace.id;
+    const key = JSON.stringify([
+      "template",
+      workspaceId,
+      contactId,
+      templateId,
+      values,
+      consent,
+    ]);
+    const operationId = attempts.get(key) || crypto.randomUUID();
+    attempts.set(key, operationId);
+    pending++;
+    emit();
+    try {
+      const data = await workspaceApi("/send", {
+        workspaceId,
+        operationId,
+        contactId,
+        type: "template",
+        templateId,
+        values,
+        consent,
+      });
+      if (cloud.workspace.id === workspaceId) update(data);
+      attempts.delete(key);
+      emit();
+      return data.result;
+    } catch (error) {
+      if (error.data?.state && cloud.workspace.id === workspaceId)
+        update(error.data);
+      if (
+        (error.status && error.status !== 409 && error.status < 500) ||
+        error.data?.result?.status === 502
+      )
+        attempts.delete(key);
+      emit();
+      throw error;
+    } finally {
+      pending--;
+      emit();
+    }
+  };
   for (const [name, key] of [
     ["setTheme", "theme"],
     ["setSort", "serviceSort"],
@@ -144,6 +234,7 @@ export function createCloudStore(initial) {
       return () => listeners.delete(fn);
     },
     actions,
+    listMetaTemplates: () => workspaceApi("/templates"),
     setViewed(contactId, messageIds, read = true) {
       const workspaceId = cloud.workspace.id;
       const run = async () => {

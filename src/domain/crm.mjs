@@ -39,8 +39,8 @@ function recentClosed(contacts, agent, limit = 20) {
 function cardState(c, now = Date.now()) {
   if (c.sessionState === "closed") return "closed";
   const end = Date.parse(c.lastInboundAt) + 86400000;
-  if (Number.isFinite(end) && end - now <= 2 * 3600000) return "ending";
-  return c.waitingSince ? "waiting" : "current";
+  if (!Number.isFinite(end) || now >= end) return "closed";
+  return c.unreadCount > 0 ? "waiting" : "current";
 }
 function expand(text, caret, templates, values) {
   const before = text.slice(0, caret);

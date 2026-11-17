@@ -189,15 +189,15 @@ export default function Attendance() {
       <div className="card-color-legend">
         <span>
           <i className="legend-orange" />
-          Aguardando resposta ou perto de fechar
+          Mensagem nova
         </span>
         <span>
-          <i className="legend-blue" />
-          Respondido
+          <i className="legend-green" />
+          Em dia
         </span>
         <span>
           <i className="legend-red" />
-          Finalizado
+          Janela de 24 horas fechada
         </span>
       </div>
     </>
@@ -208,7 +208,16 @@ export function ServiceCard({ contact: c }) {
     status = Crm.cardState(c),
     closed = c.sessionState === "closed";
   return (
-    <article className={`service-tile state-${status}`}>
+    <article
+      aria-label={
+        status === "closed"
+          ? "Janela fechada ou atendimento finalizado"
+          : status === "waiting"
+            ? "Mensagem nova"
+            : "Em dia"
+      }
+      className={`service-tile state-${status}`}
+    >
       <button
         className="service-tile-main"
         aria-label={`${closed ? "Ver histórico de" : "Abrir atendimento de"} ${c.name}`}
@@ -220,22 +229,6 @@ export function ServiceCard({ contact: c }) {
             <b>{c.name}</b>
             <small>{c.phone}</small>
           </span>
-          {!!c.unreadCount && (
-            <span
-              className="unread-count"
-              aria-label={`${c.unreadCount} mensagens não lidas`}
-            >
-              {c.unreadCount}
-            </span>
-          )}
-          {status === "ending" && (
-            <i
-              className="ending-indicator"
-              title="Janela termina em até 2 horas"
-            >
-              <Icon name="clock" />
-            </i>
-          )}
         </div>
         <p>{c.preview || "Inicie o atendimento."}</p>
       </button>

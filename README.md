@@ -5,16 +5,34 @@ inicie a interface com `npm run dev` (http://127.0.0.1:4173).
 
 ## Login e contas
 
-O acesso ao CRM usa e-mail e senha, com cadastro, logout e alteração de senha.
+O formulário aceita e-mail ou usuário. Quando uma conta tem `username`
+configurado, somente esse usuário permite entrar; o e-mail é mantido como
+contato, sem funcionar como login alternativo. O usuário inicial opcional
+fica em `KLIVO_ADMIN_USERNAME` no `.env`.
+
+### Leitura e cópia de mensagens
+
+A migração `0005_message_views.sql` guarda a leitura por empresa, usuário,
+contato e ID da mensagem. Uma conversa aberta é marcada como lida quando a
+aba está visível, com foco e no fim do histórico. É possível marcar a conversa
+como não lida e filtrar a fila por não lidas, independentemente de estar
+aguardando resposta. A leitura de um usuário não altera a dos demais e não
+é gravada no documento compartilhado da empresa. Nenhuma confirmação de
+leitura é enviada à Meta. O botão Copiar transfere somente o texto da mensagem
+para a área de transferência e mantém as quebras de linha.
+
+### Autenticação
+
+O acesso ao CRM usa e-mail e senha, com logout e alteração de senha. O cadastro público está desativado na interface e na API.
 O Worker em `server/crm/` autentica no D1 e usa PBKDF2-SHA256 com salt,
 sessões de sete dias e cookies HttpOnly/Secure/SameSite. Há limitação de
 tentativas de autenticação. As sessões são invalidadas ao sair ou trocar a senha.
-Cadastros novos recebem acesso de membro; só o proprietário acessa o painel
-global de testes do WhatsApp. O cadastro não inclui confirmação de e-mail
+Só o proprietário acessa o painel
+global de testes do WhatsApp. O acesso não inclui confirmação de e-mail
 nem recuperação de senha por e-mail nesta versão.
 
 As contas, sessões e espaços de empresa são persistidos no servidor. Cada
-cadastro recebe uma empresa vazia. Contatos, anotações, histórico de texto
+usuário provisionado recebe uma empresa vazia. Contatos, anotações, histórico de texto
 importado, setores, respostas rápidas, rascunhos de modelos, lembretes e logs
 são salvos no D1 por empresa. A interface consulta atualizações a cada dez
 segundos e ao recuperar o foco. Escritas são confirmadas pelo servidor antes
@@ -299,3 +317,15 @@ Validação: `npm test` e `npm run build`. Os testes do webhook usam credenciais
 fictícias, servidor HTTP local e banco temporário, sem chamar a Meta.
 
 No PowerShell com bloqueio de scripts, use `npm.cmd` no lugar de `npm`.
+
+## Respostas reais pelo WhatsApp
+
+A migração 0007_outbox.sql habilita a caixa de saída persistente. Respostas de texto são permitidas somente para contatos recebidos do WhatsApp, dentro de 24 horas da última mensagem, com acesso ao setor e atendimento disponível. O servidor determina o destinatário pelo vínculo com a conta e o número configurados, assina o texto com o nome do atendente e valida citações na própria conversa. Modelos iniciados pela empresa, anexos e áudios continuam indisponíveis no envio conectado.
+
+A reserva da operação acontece antes da chamada externa. Repetir a mesma operação não chama a Meta novamente; falhas de rede ficam sem confirmação e não têm reenvio automático. A API aceitar uma mensagem não equivale à entrega: callbacks atualizam o histórico para enviada, entregue, lida ou não entregue, mostrando o erro da Meta. Apenas confirmação de envio limpa a espera por resposta. Até 20 tentativas por minuto por empresa. O token fica somente no Worker. As restrições da Meta continuam sendo aplicadas.
+
+## Modelos aprovados na Meta
+
+Em Templates → Modelos WhatsApp, o CRM consulta os modelos aprovados da conta vinculada à empresa ativa, usando whatsapp_business_management. O botão Enviar template na conversa permite escolher a versão/idioma, preencher variáveis posicionais ou nomeadas e conferir a prévia. Cabeçalhos com imagem, vídeo ou documento e cartões de carrossel recebem URLs HTTPS públicas; o arquivo é buscado pela Meta. Formatos não suportados são indicados e não são enviados. Os rascunhos locais não são usados para envio real.
+
+O servidor consulta novamente a aprovação e o vínculo antes de enviar, determina nome, idioma e componentes a partir da definição da Meta, exige confirmação de autorização do cliente e usa a mesma caixa de saída idempotente das respostas. Modelos podem ser enviados fora da janela, mas não reabrem o atendimento nem renovam as 24 horas sem resposta do cliente. Aprovação não elimina as restrições e cobranças da Meta. Templates de autenticação ainda não são suportados.

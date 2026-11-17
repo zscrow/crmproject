@@ -92,6 +92,8 @@ export async function authRoute(request, env) {
     return json({ error: "Rota não encontrada." }, 404);
   if (request.headers.get("Origin") !== new URL(request.url).origin)
     return json({ error: "Origem não permitida." }, 403);
+  if (path === "/api/auth/register")
+    return json({ error: "O cadastro de novas contas está desativado." }, 403);
   if (path === "/api/auth/logout") {
     const user = await sessionUser(request, env.DB);
     if (user)
@@ -100,11 +102,7 @@ export async function authRoute(request, env) {
         .run();
     return json({ ok: true }, 200, sessionCookie("", 0));
   }
-  if (
-    !["/api/auth/login", "/api/auth/register", "/api/auth/password"].includes(
-      path,
-    )
-  )
+  if (!["/api/auth/login", "/api/auth/password"].includes(path))
     return json({ error: "Rota não encontrada." }, 404);
   const raw = await request.text();
   if (raw.length > 4096)
@@ -152,74 +150,25 @@ export async function authRoute(request, env) {
     ]);
     return json({ ok: true }, 200, sessionCookie("", 0));
   }
-  const register = path.endsWith("/register");
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (
-    !(validEmail || (!register && /^[a-z0-9_.-]{3,64}$/.test(email))) ||
+    !(validEmail || /^[a-z0-9_.-]{3,64}$/.test(email)) ||
     email.length > 254 ||
     password.length > 128
   )
     return json({ error: "Confira o usuário e a senha." }, 400);
-  if (
-    !(await limit(
-      env.DB,
-      await digest((register ? "register:" : "login:") + ip),
-      register ? 8 : 30,
-    ))
-  )
+  if (!(await limit(env.DB, await digest("login:" + ip), 30)))
     return json({ error: "Muitas tentativas. Aguarde 15 minutos." }, 429);
-  if (
-    !register &&
-    !(await limit(env.DB, await digest("email:" + email + ":" + ip), 10))
-  )
+  if (!(await limit(env.DB, await digest("email:" + email + ":" + ip), 10)))
     return json({ error: "Muitas tentativas. Aguarde 15 minutos." }, 429);
-  let user;
-  if (register) {
-    const name = String(input.name || "").trim(),
-      company = String(input.company || "").trim();
-    if (
-      password.length < 12 ||
-      name.length < 2 ||
-      name.length > 100 ||
-      company.length < 2 ||
-      company.length > 100
-    )
-      return json(
-        {
-          error:
-            "Preencha nome e empresa. A senha deve ter entre 12 e 128 caracteres.",
-        },
-        400,
-      );
-    const id = crypto.randomUUID(),
-      salt = randomToken(),
-      hash = await hashPassword(password, salt);
-    const result = await env.DB.prepare(
-      "INSERT OR IGNORE INTO klivo_users (id,email,name,company,password_hash,salt,created_at) VALUES (?,?,?,?,?,?,?)",
-    )
-      .bind(id, email, name, company, hash, salt, Date.now())
-      .run();
-    if (!result.meta.changes)
-      return json(
-        {
-          error:
-            "Não foi possível criar a conta com este e-mail. Tente entrar.",
-        },
-        409,
-      );
-    user = await env.DB.prepare("SELECT * FROM klivo_users WHERE id = ?")
-      .bind(id)
-      .first();
-  } else {
-    user = await env.DB.prepare(
-      "SELECT * FROM klivo_users WHERE username = ? OR (username IS NULL AND email = ?)",
-    )
-      .bind(email, email)
-      .first();
-    const hash = await hashPassword(password, user?.salt || "klivo-dummy-salt");
-    if (!user || !safeEqual(hash, user.password_hash))
-      return json({ error: "Usuário ou senha incorretos." }, 401);
-  }
+  const user = await env.DB.prepare(
+    "SELECT * FROM klivo_users WHERE username = ? OR (username IS NULL AND email = ?)",
+  )
+    .bind(email, email)
+    .first();
+  const hash = await hashPassword(password, user?.salt || "klivo-dummy-salt");
+  if (!user || !safeEqual(hash, user.password_hash))
+    return json({ error: "Usuário ou senha incorretos." }, 401);
   const token = randomToken(),
     tokenHash = await digest(token);
   await env.DB.batch([

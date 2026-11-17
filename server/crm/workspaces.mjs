@@ -1,3 +1,5 @@
+import { workspaceTemplates } from "./templates.mjs";
+import { sendReply, syncOutbound } from "./outbound.mjs";
 import { createCrmStore, initialState } from "../../src/store.mjs";
 import Crm from "../../src/domain/crm.mjs";
 import { digest, randomToken } from "./auth.mjs";
@@ -59,6 +61,7 @@ export async function workspaceFor(db, user) {
       (m) => m.workspace_id === user.active_workspace_id,
     ) || memberships.results[0];
   const inbox = await syncInbound(db, member.workspace_id);
+  await syncOutbound(db, member.workspace_id);
   const workspace = await db
     .prepare("SELECT * FROM klivo_workspaces WHERE id=?")
     .bind(member.workspace_id)
@@ -408,6 +411,31 @@ export async function workspaceRoute(request, env, user) {
   let c = await workspaceFor(env.DB, user);
   if (url.pathname === "/api/workspace" && request.method === "GET")
     return json(responseState(c, user));
+  if (url.pathname === "/api/workspace/templates" && request.method === "GET") {
+    try {
+      return json({
+        workspaceId: c.workspace.id,
+        templates: await workspaceTemplates(env, c),
+      });
+    } catch (error) {
+      return json({ error: error.message }, 502);
+    }
+  }
+  if (url.pathname === "/api/workspace/send" && request.method === "POST") {
+    let body;
+    try {
+      body = await bodyOf(request, 40000);
+    } catch {
+      return json({ error: "Dados da mensagem inválidos." }, 400);
+    }
+    const result = await sendReply(env, c, user, body);
+    return json(
+      responseState(await workspaceFor(env.DB, user), user, result, {
+        ...(result.error ? { error: result.error } : {}),
+      }),
+      result.status,
+    );
+  }
   if (url.pathname === "/api/workspace/viewed" && request.method === "POST") {
     const body = await bodyOf(request);
     if (body.workspaceId !== c.workspace.id)

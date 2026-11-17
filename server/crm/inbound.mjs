@@ -33,7 +33,7 @@ export function inboundText(message) {
     (caption ? "\n" + String(caption).slice(0, 4000) : "")
   );
 }
-async function payloadOf(db, deliveryId) {
+export async function payloadOf(db, deliveryId) {
   const parts = await db
     .prepare(
       "SELECT payload FROM delivery_parts WHERE delivery_id=? ORDER BY part_index",

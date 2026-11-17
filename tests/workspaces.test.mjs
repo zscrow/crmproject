@@ -1,3 +1,4 @@
+import { seedAccount } from "./helpers/account.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -36,6 +37,7 @@ test("workspace isolation, permissions, invitations and concurrent updates with 
     "0004_inbound.sql",
     "0005_message_views.sql",
     "0006_usernames.sql",
+    "0007_outbox.sql",
   ])
     await db.batch(
       readFileSync("server/cloudflare/migrations/" + name, "utf8")
@@ -56,10 +58,9 @@ test("workspace isolation, permissions, invitations and concurrent updates with 
       body: body ? JSON.stringify(body) : undefined,
     });
   async function register(email) {
-    const r = await call("/api/auth/register", null, {
-      name: email.split("@")[0],
+    await seedAccount(db, email, "secure-test-password");
+    const r = await call("/api/auth/login", null, {
       email,
-      company: "Empresa " + email,
       password: "secure-test-password",
     });
     assert.equal(r.status, 200);

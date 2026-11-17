@@ -192,12 +192,14 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
     const sender = actor.id;
     setBusy(true);
     try {
-      if (store.cloud)
-        throw new Error(
-          "O envio pelo WhatsApp será conectado na próxima etapa. Seu rascunho foi preservado.",
-        );
-      const attachments = await persistAttachments(files);
+      if (store.cloud && files.length)
+        throw new Error("O envio conectado aceita texto nesta etapa.");
+      const attachments = store.cloud ? [] : await persistAttachments(files);
       await actions.send(c.id, text, attachments, sender, reply?.messageId);
+      if (store.cloud)
+        ui.notify(
+          "Mensagem aceita pela Meta. Aguardando confirmação de entrega.",
+        );
       onCancelReply?.();
       setCommands(null);
       setText("");
@@ -351,6 +353,12 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
             type="button"
             className="composer-icon"
             aria-label="Adicionar anexo"
+            disabled={store.cloud}
+            title={
+              store.cloud
+                ? "Envio de anexos ainda não disponível"
+                : "Adicionar anexo"
+            }
             aria-expanded={menu === "file"}
             onClick={() => setMenu(menu === "file" ? null : "file")}
           >
@@ -438,7 +446,7 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
           type="button"
           className="composer-icon microphone-button"
           aria-label="Gravar áudio"
-          disabled={!!recording || busy}
+          disabled={store.cloud || !!recording || busy}
           onClick={() => {
             if (own()) recorder.current?.start();
           }}
@@ -448,7 +456,7 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
         <button
           className="primary composer-send"
           type="submit"
-          aria-label={busy ? "Registrando mensagem" : "Enviar mensagem"}
+          aria-label={busy ? "Enviando mensagem" : "Enviar mensagem"}
           disabled={busy || !!(c.assigneeId && c.assigneeId !== actor.id)}
         >
           {busy ? <span className="send-spinner" /> : <Icon name="send" />}

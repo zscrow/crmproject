@@ -1,3 +1,4 @@
+import { seedAccount } from "./helpers/account.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -37,6 +38,7 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
     "0004_inbound.sql",
     "0005_message_views.sql",
     "0006_usernames.sql",
+    "0007_outbox.sql",
   ])
     await db.batch(
       readFileSync("server/cloudflare/migrations/" + name, "utf8")
@@ -57,11 +59,10 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
       body: body ? JSON.stringify(body) : undefined,
     });
   async function account(email) {
-    const r = await call("/api/auth/register", null, {
+    await seedAccount(db, email, "a-secure-test-password");
+    const r = await call("/api/auth/login", null, {
       email,
       password: "a-secure-test-password",
-      name: email.split("@")[0],
-      company: "Empresa",
     });
     assert.equal(r.status, 200);
     const cookie = r.headers.get("set-cookie").split(";")[0];

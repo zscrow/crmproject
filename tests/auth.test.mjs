@@ -1,3 +1,4 @@
+import { seedAccount } from "./helpers/account.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -32,7 +33,11 @@ test("login, sessions, account isolation, logout and password change on Workers 
   for (const migration of [
     "0001_webhooks.sql",
     "0002_auth.sql",
+    "0003_workspaces.sql",
+    "0004_inbound.sql",
+    "0005_message_views.sql",
     "0006_usernames.sql",
+    "0007_outbox.sql",
   ])
     await db.batch(
       readFileSync("server/cloudflare/migrations/" + migration, "utf8")
@@ -72,7 +77,14 @@ test("login, sessions, account isolation, logout and password change on Workers 
     ).status,
     403,
   );
-  let response = await post("register", {
+  await seedAccount(
+    db,
+    "a@example.com",
+    "very-secure-password",
+    "Ana",
+    "Studio",
+  );
+  let response = await post("login", {
     email: "a@example.com",
     password: "very-secure-password",
     name: "Ana",
@@ -102,14 +114,26 @@ test("login, sessions, account isolation, logout and password change on Workers 
         company: "Studio",
       })
     ).status,
-    409,
+    403,
   );
-  const second = await post("register", {
+  await seedAccount(
+    db,
+    "b@example.com",
+    "very-secure-password",
+    "Bia",
+    "Other",
+  );
+  const second = await post("login", {
     email: "b@example.com",
     password: "very-secure-password",
     name: "Bia",
     company: "Other",
   });
+  assert.equal(
+    (await db.prepare("SELECT COUNT(*) AS count FROM klivo_users").first())
+      .count,
+    2,
+  );
   const secondUser = (await second.json()).user;
   assert.notEqual(user.id, secondUser.id);
   await db

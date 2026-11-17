@@ -84,7 +84,7 @@ function ConnectedInbox({ store }) {
         ? "Recebimento conectado"
         : "Recebimento configurado"}
       <br />
-      Envio desativado
+      Respostas de texto · janela de 24h
       <button
         className="inbox-refresh"
         disabled={busy}

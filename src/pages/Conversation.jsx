@@ -146,14 +146,6 @@ export default function Conversation() {
                 <b>{x.name}</b>
                 <small>{x.preview || "Iniciar conversa"}</small>
               </span>
-              {!!x.unreadCount && (
-                <span
-                  className="unread-count"
-                  aria-label={`${x.unreadCount} mensagens não lidas`}
-                >
-                  {x.unreadCount}
-                </span>
-              )}
             </button>
           ))}
           {!open.length && (
@@ -179,6 +171,16 @@ export default function Conversation() {
             </span>
           </div>
           <div className="conversation-header-actions">
+            {store.cloud && c.waSenderId && (
+              <button
+                className="secondary"
+                onClick={() =>
+                  ui.setDialog({ type: "whatsapp", contactId: c.id })
+                }
+              >
+                Enviar template
+              </button>
+            )}
             {store.cloud && messages.some((m) => m.direction === "inbound") && (
               <button
                 className="secondary"
@@ -393,7 +395,7 @@ export default function Conversation() {
             <div className="closed-actions">
               <button
                 className="primary"
-                disabled={store.cloud}
+                disabled={store.cloud && !c.waSenderId}
                 onClick={() =>
                   ui.setDialog({ type: "whatsapp", contactId: c.id })
                 }
@@ -408,11 +410,6 @@ export default function Conversation() {
               </button>
             </div>
           </div>
-        ) : store.cloud ? (
-          <p className="library-info">
-            O histórico está salvo na nuvem. O envio de mensagens pelo Klivo
-            ainda não está habilitado.
-          </p>
         ) : (
           <Composer
             key={c.id}
