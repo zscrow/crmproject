@@ -29,7 +29,11 @@ test("login, sessions, account isolation, logout and password change on Workers 
   );
   t.after(() => mf.dispose());
   const db = await mf.getD1Database("DB");
-  for (const migration of ["0001_webhooks.sql", "0002_auth.sql", "0006_usernames.sql"])
+  for (const migration of [
+    "0001_webhooks.sql",
+    "0002_auth.sql",
+    "0006_usernames.sql",
+  ])
     await db.batch(
       readFileSync("server/cloudflare/migrations/" + migration, "utf8")
         .split(";")
@@ -136,9 +140,28 @@ test("login, sessions, account isolation, logout and password change on Workers 
   const renewed = response.headers.get("set-cookie").split(";")[0];
   await post("logout", {}, renewed);
   assert.equal((await req("/api/auth/me", null, renewed)).status, 401);
-  await db.prepare("UPDATE klivo_users SET username='Alovi' WHERE id=?").bind(user.id).run();
-  assert.equal((await post('login',{email:'a@example.com',password:'another-secure-password'})).status,401);
-  assert.equal((await post('login',{email:'alovi',password:'another-secure-password'})).status,200);
+  await db
+    .prepare("UPDATE klivo_users SET username='Alovi' WHERE id=?")
+    .bind(user.id)
+    .run();
+  assert.equal(
+    (
+      await post("login", {
+        email: "a@example.com",
+        password: "another-secure-password",
+      })
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await post("login", {
+        email: "alovi",
+        password: "another-secure-password",
+      })
+    ).status,
+    200,
+  );
   const rateBody = {
     email: "nonexistent@example.com",
     password: "incorrect-password",

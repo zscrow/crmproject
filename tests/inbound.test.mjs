@@ -183,6 +183,19 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
   );
   assert.equal(parallel.state.messages[contactId].length, 2);
   assert.equal(first.inbox.connected, true);
+  assert.equal(first.state.contacts[0].unreadCount, 2);
+  const readOne = await call("/api/workspace/viewed", a.cookie, {
+    workspaceId: first.workspace.id,
+    contactId,
+    messageIds: ["m1", "m3"],
+    read: true,
+  });
+  assert.equal(readOne.status, 200);
+  const readState = await readOne.json();
+  assert.equal(readState.state.contacts[0].unreadCount, 1);
+  assert.ok(
+    readState.state.messages[contactId].find((m) => m.id === "m1").viewedAt,
+  );
   assert.ok(first.inbox.lastMessageAt);
   const onlyB = await get(b.cookie);
   assert.equal(onlyB.state.contacts.length, 1);
@@ -201,7 +214,12 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
   let reopened = await get(a.cookie);
   assert.equal(reopened.state.contacts[0].sessionState, "open");
   assert.equal(reopened.state.contacts[0].preview, "Retorno");
-  assert.equal(reopened.state.messages[contactId].filter(m=>m.direction==='inbound').length, 3);
+  assert.equal(reopened.state.contacts[0].unreadCount, 2);
+  assert.equal(
+    reopened.state.messages[contactId].filter((m) => m.direction === "inbound")
+      .length,
+    3,
+  );
   closed = await action(a, reopened, "close", [contactId]);
   await capture([
     change("phone-1", [message("old", "Mensagem atrasada", stamp - 3600)]),
@@ -209,7 +227,11 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
   const late = await get(a.cookie);
   assert.equal(late.state.contacts[0].sessionState, "closed");
   assert.equal(late.state.contacts[0].preview, "Retorno");
-  assert.equal(late.state.messages[contactId].filter(m=>m.direction==='inbound').length, 4);
+  assert.equal(
+    late.state.messages[contactId].filter((m) => m.direction === "inbound")
+      .length,
+    4,
+  );
   await capture([
     {
       field: "messages",
@@ -249,4 +271,69 @@ test("stored WhatsApp messages open the correct workspace inbox exactly once", a
     .bind(a.workspace.workspace.id)
     .first();
   assert.equal(receipts.n, 5);
+  const reader = await account("reader@example.com");
+  const invite = await call("/api/workspace/invitations", a.cookie, {
+    workspaceId: bsuid.workspace.id,
+    email: "reader@example.com",
+    role: "agent",
+    sectors: ["Triagem"],
+  });
+  const inviteToken = new URL((await invite.json()).url).searchParams.get(
+    "invite",
+  );
+  assert.equal(
+    (await call("/api/workspace/join", reader.cookie, { token: inviteToken }))
+      .status,
+    200,
+  );
+  const readerState = await get(reader.cookie);
+  assert.equal(
+    readerState.state.contacts.find((p) => p.id === contactId).unreadCount,
+    4,
+  );
+  const marked = await call("/api/workspace/viewed", reader.cookie, {
+    workspaceId: bsuid.workspace.id,
+    contactId,
+    messageIds: ["m1", "m2", "m3", "old"],
+    read: true,
+  });
+  assert.equal(marked.status, 200);
+  assert.equal(
+    (await marked.json()).state.contacts.find((p) => p.id === contactId)
+      .unreadCount,
+    0,
+  );
+  assert.equal(
+    (await get(a.cookie)).state.contacts.find((p) => p.id === contactId)
+      .unreadCount,
+    3,
+  );
+  const unread = await call("/api/workspace/viewed", reader.cookie, {
+    workspaceId: bsuid.workspace.id,
+    contactId,
+    messageIds: ["m3"],
+    read: false,
+  });
+  assert.equal(
+    (await unread.json()).state.contacts.find((p) => p.id === contactId)
+      .unreadCount,
+    1,
+  );
+  await call("/api/workspace/member", a.cookie, {
+    workspaceId: bsuid.workspace.id,
+    userId: readerState.state.activeAgentId,
+    role: "agent",
+    sectors: ["Arte"],
+  });
+  assert.equal(
+    (
+      await call("/api/workspace/viewed", reader.cookie, {
+        workspaceId: bsuid.workspace.id,
+        contactId,
+        messageIds: ["m1"],
+        read: true,
+      })
+    ).status,
+    403,
+  );
 });
