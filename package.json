@@ -1,5 +1,5 @@
 {
-  "name": "zapcaster",
+  "name": "klivo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "webhook:deploy": "node scripts/cloudflare-deploy.mjs",
     "webhook:secrets": "node scripts/cloudflare-secrets.mjs",
     "webhook:import:prepare": "node --env-file-if-exists=.env scripts/cloudflare-import.mjs",
-    "webhook:migrate:local": "wrangler d1 migrations apply zapcaster-webhooks --local",
-    "webhook:migrate": "wrangler d1 migrations apply zapcaster-webhooks --remote --profile zapcaster",
+    "webhook:migrate:local": "wrangler d1 migrations apply klivo-webhooks --local",
+    "webhook:migrate": "wrangler d1 migrations apply klivo-webhooks --remote",
     "webhook:types": "wrangler types worker-configuration.d.ts",
     "webhook:check": "npm run webhook:types && tsc -p tsconfig.worker.json",
     "prebuild": "node prepare-react-runtime.cjs",

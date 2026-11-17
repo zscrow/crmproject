@@ -1,10 +1,12 @@
 import { useCrm, useUi } from "../context.jsx";
 import Crm from "../domain/crm.mjs";
 import { Avatar, Heading, Icon } from "../components/UI.jsx";
+import CloudTeam from "./CloudTeam.jsx";
 export default function Team() {
-  const { state, actor } = useCrm(),
+  const { state, actor, store } = useCrm(),
     ui = useUi();
   if (!Crm.isAdmin(actor)) return null;
+  if (store.cloud) return <CloudTeam />;
   return (
     <>
       <Heading

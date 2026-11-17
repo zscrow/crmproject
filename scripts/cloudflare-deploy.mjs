@@ -16,7 +16,7 @@ const filename = resolve(".runtime", `cloudflare-secrets-${randomUUID()}.json`);
 writeFileSync(filename, JSON.stringify(Object.fromEntries(names.map(name => [name, local[name]]))), { flag:"wx", mode:0o600 });
 try {
   const code = await new Promise((resolveExit, reject) => {
-    const wrangler = spawn(process.execPath, ["node_modules/wrangler/bin/wrangler.js", "deploy", "--profile", "zapcaster", "--secrets-file", filename], {
+    const wrangler = spawn(process.execPath, ["node_modules/wrangler/bin/wrangler.js", "deploy", "--secrets-file", filename], {
       stdio:"inherit", env:{...process.env, WRANGLER_LOG_PATH:resolve(".runtime/wrangler-logs")},
     });
     wrangler.on("error", reject);

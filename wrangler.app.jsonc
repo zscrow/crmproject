@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "klivo-crm",
+  "account_id": "eaaba3c7a767b11293b5a10f976cec5a",
+  "compatibility_date": "2026-11-16",
+  "workers_dev": true,
+  "preview_urls": false,
+  "main": "server/crm/worker.mjs",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{"binding":"DB","database_name":"klivo-webhooks","database_id":"eb008a2b-1e37-4f69-9bef-ea0168b6726f","migrations_dir":"server/cloudflare/migrations"}],
+  "assets": {
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -1,9 +1,133 @@
-# zapCaster
+# Klivo
 
 CRM em React. Requer Node.js 24. Instale as dependências com `npm install` e
 inicie a interface com `npm run dev` (http://127.0.0.1:4173).
 
+## Login e contas
+
+O acesso ao CRM usa e-mail e senha, com cadastro, logout e alteração de senha.
+O Worker em `server/crm/` autentica no D1 e usa PBKDF2-SHA256 com salt,
+sessões de sete dias e cookies HttpOnly/Secure/SameSite. Há limitação de
+tentativas de autenticação. As sessões são invalidadas ao sair ou trocar a senha.
+Cadastros novos recebem acesso de membro; só o proprietário acessa o painel
+global de testes do WhatsApp. O cadastro não inclui confirmação de e-mail
+nem recuperação de senha por e-mail nesta versão.
+
+As contas, sessões e espaços de empresa são persistidos no servidor. Cada
+cadastro recebe uma empresa vazia. Contatos, anotações, histórico de texto
+importado, setores, respostas rápidas, rascunhos de modelos, lembretes e logs
+são salvos no D1 por empresa. A interface consulta atualizações a cada dez
+segundos e ao recuperar o foco. Escritas são confirmadas pelo servidor antes
+de aparecerem como salvas; conflitos de revisão retornam 409 e atualizam a tela.
+
+Os acessos de administrador e atendente, setores e capacidades adicionais
+são verificados no servidor em todas as operações. O usuário não pode trocar
+sua identidade de atendente. Cada conta pode participar de várias empresas
+e alternar a empresa ativa. As mutações informam explicitamente a empresa
+para evitar que uma troca em outra aba aplique uma alteração ao espaço errado.
+Administradores geram convites por link vinculados a e-mail e válidos por sete
+dias, gerenciam os acessos e podem removê-los. O convite não é enviado por e-mail.
+O último administrador não pode ser removido ou rebaixado.
+
+A migração do armazenamento local é opcional e só pode ser feita por um
+administrador em uma empresa vazia: até mil contatos, anotações e histórico
+de texto. A versão anterior permanece no navegador; os registros importados
+são marcados como históricos e não autorizam envios reais. Anexos locais não
+são transferidos para a nuvem nesta etapa. Os arquivos da versão anterior
+continuam no IndexedDB de origem.
+
+Nesta primeira implementação, o estado de cada empresa usa um documento D1
+com revisão e limite de 900 KB. A autorização revalida a associação do usuário,
+incluindo mudanças de papel/setores, no momento da escrita. Recibos por operação
+evitam reaplicar uma alteração confirmada. Antes de crescer para bases grandes,
+normalize contatos, mensagens e logs em tabelas por entidade e acrescente
+armazenamento próprio de mídias. O onboarding de WhatsApp de cada empresa e
+o envio real pela caixa de atendimento ainda são etapas separadas.
+
+### Recebimento do WhatsApp na caixa de atendimento
+
+A migração `0004_inbound.sql` associa conta WhatsApp e ID do número a uma
+única empresa. Configure `WHATSAPP_BUSINESS_ACCOUNT_ID`,
+`WHATSAPP_PHONE_NUMBER_ID` e `KLIVO_ADMIN_EMAIL` no `.env`, aplique as migrações
+e execute `node scripts/connect-test-inbox.mjs`. Por padrão, o número de teste
+é associado à empresa original da conta proprietária; para selecionar outra
+empresa da qual ela seja administradora, informe `KLIVO_TEST_WORKSPACE_ID`.
+O script recusa transferir automaticamente um número já vinculado a outra empresa.
+
+O receptor continua validando e armazenando os webhooks antes de responder à
+Meta. Ao consultar a empresa, a API processa até vinte eventos de mensagem
+pendentes por atualização, identifica a conta e o número exatos e cria ou
+reutiliza o contato no setor configurado (Triagem por padrão). O histórico
+preserva o ID original da mensagem e sua data; mensagens novas abrem ou
+reabrem o atendimento. Eventos antigos não fazem o horário da última mensagem
+retroceder nem reabrem um atendimento encerrado com mensagens mais recentes.
+Reentregas não duplicam registros. Recibos de projeção e revisão do documento
+são gravados em uma transação, sem sobrescrever alterações concorrentes.
+
+A interface atualiza a cada dez segundos, ao recuperar foco e pelo botão
+Atualizar mensagens na barra lateral. Com o CRM fechado, os eventos permanecem
+no receptor e são incorporados na próxima consulta. Status de envio ficam no
+painel de testes e não criam contatos ou conversas recebidas. Textos, respostas
+de botões e descrições/legendas de outros tipos aparecem no histórico; download
+e reprodução de mídias ainda não estão implementados. Nenhuma resposta,
+confirmação de leitura ou mensagem de saída é enviada à Meta por esse processo.
+
+As permissões e restrições de entrega da Meta continuam aplicáveis. Só é possível
+exibir uma mensagem real se ela for entregue ao webhook. Dados fictícios do
+botão Test do painel com IDs de conta/número diferentes não são associados a
+uma empresa como se fossem mensagens reais do número conectado.
+
+Aplique as migrações antes de publicar e execute `node scripts/bootstrap-account.mjs`
+uma única vez para preparar o proprietário. As credenciais iniciais ficam em
+`KLIVO_ADMIN_EMAIL` e `KLIVO_ADMIN_PASSWORD` no `.env` ignorado pelo Git.
+A senha não é publicada como variável de ambiente e não é exibida nos logs.
+Troque a senha inicial pelo botão Alterar senha após entrar. Rodar o bootstrap
+novamente não altera a senha de uma conta existente.
+
 ## Webhook oficial do WhatsApp
+
+### Painel protegido de testes
+
+Acesse `/whatsapp.html` (também disponível nas configurações do CRM) após
+entrar na conta administradora. O painel usa a mesma sessão do CRM; a chave
+antiga deixou de autorizar requisições. Os segredos da Meta ficam no servidor.
+
+O painel consulta eventos dos dez recebimentos mais recentes no mesmo D1 do
+webhook. Ele permite enviar texto ou o modelo de teste `hello_world` somente
+para `WHATSAPP_TEST_RECIPIENT`, configurado no servidor. A Meta continua
+aplicando suas restrições de destinatário, permissões, publicação e janela
+de atendimento. Uma resposta de envio aceito não confirma a entrega.
+O painel de testes não mantém
+histórico próprio de mensagens enviadas; os status recebidos são mostrados
+quando entregues ao webhook. Trata-se de uma ferramenta de teste de uma
+única conta, sem suporte a múltiplas empresas.
+
+Configure no `.env` (sem prefixos `VITE_`):
+
+```dotenv
+META_ACCESS_TOKEN=token_novo_da_meta
+WHATSAPP_PHONE_NUMBER_ID=id_do_numero_de_teste
+WHATSAPP_TEST_RECIPIENT=numero_autorizado_com_pais_e_ddd_somente_digitos
+```
+
+Compile com `npm.cmd run build` e publique com
+`node scripts/cloudflare-app-deploy.mjs`. O script envia apenas as três
+variáveis acima e remove o arquivo temporário de segredos ao finalizar.
+Atualize e publique novamente quando o token temporário da Meta expirar.
+
+### Publicar a interface no Cloudflare
+
+`wrangler.app.jsonc` publica a interface e a API de autenticação, com fallback
+para as rotas React. Depois de autenticar na conta desejada:
+
+```powershell
+npm.cmd run build
+npx.cmd wrangler deploy --config wrangler.app.jsonc
+```
+
+A interface persiste os dados de cada empresa no D1. O recebimento na caixa de
+atendimento exige associar a conta e o número à empresa pelo procedimento acima.
+O webhook e seu banco D1 são publicados separadamente, conforme abaixo.
 
 O back-end recebe eventos em **`GET/POST /webhooks/whatsapp`**, seguindo a
 [documentação da Meta](https://developers.facebook.com/documentation/business-messaging/whatsapp/webhooks/create-webhook-endpoint).
@@ -16,12 +140,11 @@ com o computador desligado e substitui o túnel de testes. O endereço publicado
 fica disponível no resultado de `npm.cmd run webhook:deploy`; use o caminho
 `/webhooks/whatsapp` como callback na Meta e mantenha o mesmo token do `.env`.
 
-O arquivo `wrangler.jsonc` contém o Worker `zapcaster-webhook` e o banco
-`zapcaster-webhooks`, com binding `DB`. O perfil de autenticação `zapcaster` é
-separado do login padrão do Wrangler. Para reautorizá-lo:
+O arquivo `wrangler.jsonc` contém o Worker `klivo-webhook` e o banco
+`klivo-webhooks`, com binding `DB`. Use o login padrão do Wrangler:
 
 ```powershell
-npx.cmd wrangler auth create zapcaster --scopes account:read user:read workers_scripts:write workers_tail:read d1:write
+npx.cmd wrangler login
 ```
 
 Após autenticar na conta configurada, valide e publique:
@@ -53,7 +176,7 @@ Não existe rota pública de consulta dos dados.
 Para consultar apenas contagens do banco remoto:
 
 ```powershell
-npx.cmd wrangler d1 execute zapcaster-webhooks --remote --profile zapcaster --command "SELECT field, kind, COUNT(*) AS total FROM events GROUP BY field, kind"
+npx.cmd wrangler d1 execute klivo-webhooks --remote --command "SELECT field, kind, COUNT(*) AS total FROM events GROUP BY field, kind"
 ```
 
 Para preservar recebimentos do SQLite local anterior, prepare uma importação
@@ -61,7 +184,7 @@ idempotente e aplique-a no D1:
 
 ```powershell
 npm.cmd run webhook:import:prepare
-npx.cmd wrangler d1 execute zapcaster-webhooks --remote --profile zapcaster --file .runtime/whatsapp-import.sql
+npx.cmd wrangler d1 execute klivo-webhooks --remote --file .runtime/whatsapp-import.sql
 ```
 
 O SQL de importação contém as mensagens recebidas e fica apenas na pasta local
@@ -71,8 +194,8 @@ Para desenvolvimento, `npm.cmd run webhook:migrate:local` prepara o D1 simulado
 e `npm.cmd run webhook:dev` inicia o Worker em `http://localhost:8787`, usando
 os segredos do `.env` local. Os testes usam Miniflare/workerd e credenciais
 fictícias para verificar assinatura, lotes, duplicatas, payloads grandes e rollback.
-O CRM continua em modo de demonstração; esta migração hospeda o receptor,
-sem publicar a interface ou sincronizar suas conversas locais.
+O receptor e sua migração são independentes do armazenamento dos espaços de
+empresa. As associações de recebimento são configuradas separadamente.
 
 Os logs da aplicação não incluem mensagens nem segredos. As URLs de requisição
 têm a query removida na observabilidade, e os logs automáticos de invocação
@@ -168,9 +291,8 @@ o receptor para carregar o `.env`, preservando o túnel e sua URL.
 O banco padrão é `.runtime/whatsapp.sqlite`, com tabelas `deliveries` (payloads
 originais) e `events` (mensagens, status e outras alterações). Mantenha esse
 arquivo e seus arquivos WAL em disco persistente com acesso restrito e backup.
-`WEBHOOK_DB_PATH` permite mudar o destino. A interface ainda usa dados locais
-de demonstração: os eventos recebidos não são sincronizados com a caixa de
-atendimento, e este receptor não envia mensagens. Não há API pública de leitura
+`WEBHOOK_DB_PATH` permite mudar o destino. O receptor local não alimenta a caixa de
+atendimento na nuvem e não envia mensagens. Não há API pública de leitura
 dos eventos nem credenciais armazenadas no navegador.
 
 Validação: `npm test` e `npm run build`. Os testes do webhook usam credenciais

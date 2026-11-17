@@ -16,16 +16,23 @@ const mount = () => {
 };
 it.each([/← Atendimentos/, /Finalizar atendimento/])(
   "waits for the whole conversation to finish closing via %s",
-  (buttonName) => {
-    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  async (buttonName) => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true })),
+    );
     try {
       const store = mount();
       fireEvent.click(
-        screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+        screen.getByRole("button", {
+          name: "Abrir atendimento de Mariana Costa",
+        }),
       );
       fireEvent.click(screen.getByRole("button", { name: buttonName }));
       const layout = document.querySelector(".conversation-layout");
-      expect(layout.classList.contains("conversation-closing")).toBe(true);
+      await waitFor(() =>
+        expect(layout.classList.contains("conversation-closing")).toBe(true),
+      );
       expect(layout.hasAttribute("inert")).toBe(true);
       expect(layout.querySelector(".conversation-list")).toBeTruthy();
       // React uses the WebKit event in jsdom, which lacks AnimationEvent.
@@ -48,11 +55,16 @@ it.each([/← Atendimentos/, /Finalizar atendimento/])(
   },
 );
 it("returns immediately when motion is reduced", () => {
-  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false })));
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({ matches: false })),
+  );
   try {
     mount();
     fireEvent.click(
-      screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+      screen.getByRole("button", {
+        name: "Abrir atendimento de Mariana Costa",
+      }),
     );
     fireEvent.click(screen.getByRole("button", { name: /← Atendimentos/ }));
     expect(document.querySelector(".conversation-layout")).toBeNull();
@@ -62,13 +74,20 @@ it("returns immediately when motion is reduced", () => {
   }
 });
 it("completes navigation if the exit animation event is missing", async () => {
-  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({ matches: true })),
+  );
   try {
     mount();
     fireEvent.click(
-      screen.getByRole("button", { name: "Abrir atendimento de Mariana Costa" }),
+      screen.getByRole("button", {
+        name: "Abrir atendimento de Mariana Costa",
+      }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Clientes", exact: true }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clientes", exact: true }),
+    );
     expect(document.querySelector(".conversation-closing")).toBeTruthy();
     await waitFor(() =>
       expect(document.querySelector(".conversation-layout")).toBeNull(),
@@ -92,7 +111,7 @@ describe("React CRM flows", () => {
     expect(input.value).toContain("André Saulo");
     expect(store.getSnapshot().messages[1].length).toBe(1);
   });
-  it("keeps a note open on outside click and asks before discarding via Cancel", () => {
+  it("keeps a note open on outside click and asks before discarding via Cancel", async () => {
     mount();
     fireEvent.click(
       screen.getByRole("button", {
@@ -115,7 +134,7 @@ describe("React CRM flows", () => {
       "Anotação não salva",
     );
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
   it("finds an existing contact using a differently formatted phone", () => {
     mount();

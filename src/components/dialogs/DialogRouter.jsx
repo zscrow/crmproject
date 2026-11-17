@@ -92,16 +92,21 @@ function Dialog({ d, c, state, actions, actor, visible, ui }) {
                 : { text: d.type === "note" ? c.note || "" : "" };
   const [baseline] = useState(initial);
   const [form, setForm] = useState(baseline),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const close = () => ui.setDialog(null);
   const dirty = JSON.stringify(form) !== JSON.stringify(baseline);
-  const run = (fn) => {
+  const run = async (fn) => {
+    if (busy) return;
+    setBusy(true);
     try {
-      fn();
+      await fn();
       close();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setBusy(false);
     }
   };
   const title = {
@@ -161,10 +166,10 @@ function Dialog({ d, c, state, actions, actor, visible, ui }) {
   };
   const submit = (e) => {
     e.preventDefault();
-    run(() => {
+    run(async () => {
       switch (d.type) {
         case "contact": {
-          const result = actions.saveContact(form, c?.id);
+          const result = await actions.saveContact(form, c?.id);
           ui.openConversation(result.contact.id);
           ui.notify(
             result.duplicate
@@ -174,30 +179,36 @@ function Dialog({ d, c, state, actions, actor, visible, ui }) {
           break;
         }
         case "note":
-          actions.saveNote(c.id, form.text);
+          await actions.saveNote(c.id, form.text);
           break;
         case "transfer":
-          actions.transfer(c.id, form.sector, form.person, form.note);
+          await actions.transfer(c.id, form.sector, form.person, form.note);
           ui.notify("Atendimento transferido.");
           break;
         case "profile":
-          actions.saveProfile({ ...form, sector: form.allowedSectors[0] });
+          await actions.saveProfile({
+            ...form,
+            sector: form.allowedSectors[0],
+          });
           break;
         case "template":
-          actions.saveTemplate(kind, form);
+          await actions.saveTemplate(kind, form);
           break;
         case "reminder":
-          actions.addReminder({ ...form, at: new Date(form.at).toISOString() });
+          await actions.addReminder({
+            ...form,
+            at: new Date(form.at).toISOString(),
+          });
           break;
         case "whatsapp":
-          actions.sendTemplate(c.id, form.id, form.values, form.consent);
+          await actions.sendTemplate(c.id, form.id, form.values, form.consent);
           ui.notify("Modelo simulado. Nenhuma mensagem real foi enviada.");
           break;
         case "incoming":
-          actions.receive(c.id, form.text);
+          await actions.receive(c.id, form.text);
           break;
         case "sector":
-          actions.addSector(form.text);
+          await actions.addSector(form.text);
           break;
         default:
           break;
@@ -506,7 +517,11 @@ function Dialog({ d, c, state, actions, actor, visible, ui }) {
             {d.type === "details" ? "Fechar" : "Cancelar"}
           </ModalClose>
           {d.type !== "details" && (
-            <button className="primary" type="submit" disabled={!!duplicate}>
+            <button
+              className="primary"
+              type="submit"
+              disabled={!!duplicate || busy}
+            >
               {d.type === "transfer"
                 ? "Transferir"
                 : d.type === "whatsapp"

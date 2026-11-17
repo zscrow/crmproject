@@ -1,4 +1,4 @@
-# Diretrizes de usabilidade do zapCaster
+# Diretrizes de usabilidade do Klivo
 
 Pesquisa e aplicação: 9 de novembro de 2026.
 

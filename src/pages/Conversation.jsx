@@ -10,17 +10,54 @@ import Message from "../components/Message.jsx";
 import { messageKey, quoteMessage } from "../services/chat.mjs";
 import Composer from "../components/Composer.jsx";
 export default function Conversation() {
-  const { state, actions, actor, visible } = useCrm(),
+  const { state, actions, actor, visible, store } = useCrm(),
     ui = useUi();
   const [reply, setReply] = useState(null),
     [query, setQuery] = useState(""),
     [details, setDetails] = useState(false),
     [showList, setShowList] = useState(false);
+  const [viewBusy, setViewBusy] = useState(false);
   const now = useNow(),
     listRef = useRef(),
     stick = useRef(true);
   const c = visible.find((c) => c.id === ui.selected);
   const messages = state.messages[c?.id] || [];
+  const unreadIds = messages
+    .filter((m) => m.direction === "inbound" && m.id && !m.viewedAt)
+    .map((m) => m.id);
+  const unreadKey = JSON.stringify(unreadIds);
+  const viewedRequest = useRef(false);
+  const skipAutoRead = useRef(false);
+  useEffect(() => {
+    if (!store.cloud || !c) return;
+    const mark = async () => {
+      if (
+        skipAutoRead.current ||
+        viewedRequest.current ||
+        !unreadIds.length ||
+        !stick.current ||
+        document.visibilityState !== "visible" ||
+        !document.hasFocus()
+      )
+        return;
+      viewedRequest.current = true;
+      try {
+        await store.setViewed(c.id, unreadIds, true);
+      } catch (error) {
+        ui.notify(error.message);
+      } finally {
+        viewedRequest.current = false;
+      }
+    };
+    const timer = setTimeout(mark, 350);
+    window.addEventListener("focus", mark);
+    document.addEventListener("visibilitychange", mark);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", mark);
+      document.removeEventListener("visibilitychange", mark);
+    };
+  }, [c?.id, unreadKey, store, ui.notify]);
   const mine = visible.filter(
     (c) => c.sessionState === "open" && c.assigneeId === actor.id,
   );
@@ -35,6 +72,7 @@ export default function Conversation() {
     setDetails(false);
     setShowList(false);
     stick.current = true;
+    skipAutoRead.current = false;
   }, [c?.id]);
   useLayoutEffect(() => {
     if (listRef.current && stick.current)
@@ -51,9 +89,9 @@ export default function Conversation() {
   }, [c?.id]);
   if (!c) return null;
   const closed = c.sessionState === "closed";
-  const perform = (fn) => {
+  const perform = async (fn) => {
     try {
-      fn();
+      await fn();
     } catch (error) {
       ui.notify(error.message);
     }
@@ -108,7 +146,14 @@ export default function Conversation() {
                 <b>{x.name}</b>
                 <small>{x.preview || "Iniciar conversa"}</small>
               </span>
-              {Service.isWaiting(x) && <i className="unread-dot" />}
+              {!!x.unreadCount && (
+                <span
+                  className="unread-count"
+                  aria-label={`${x.unreadCount} mensagens não lidas`}
+                >
+                  {x.unreadCount}
+                </span>
+              )}
             </button>
           ))}
           {!open.length && (
@@ -134,6 +179,33 @@ export default function Conversation() {
             </span>
           </div>
           <div className="conversation-header-actions">
+            {store.cloud && messages.some((m) => m.direction === "inbound") && (
+              <button
+                className="secondary"
+                disabled={viewBusy}
+                onClick={async () => {
+                  skipAutoRead.current = true;
+                  setViewBusy(true);
+                  try {
+                    await store.setViewed(
+                      c.id,
+                      messages
+                        .filter((m) => m.direction === "inbound" && m.id)
+                        .map((m) => m.id),
+                      false,
+                    );
+                    ui.navigate("attendance");
+                  } catch (error) {
+                    skipAutoRead.current = false;
+                    ui.notify(error.message);
+                  } finally {
+                    setViewBusy(false);
+                  }
+                }}
+              >
+                Marcar como não lida
+              </button>
+            )}
             <button
               className="secondary"
               aria-expanded={details}
@@ -146,8 +218,8 @@ export default function Conversation() {
               <button
                 className="finish-button"
                 onClick={() =>
-                  perform(() => {
-                    actions.close(c.id);
+                  perform(async () => {
+                    await actions.close(c.id);
                     ui.navigate("attendance");
                     ui.notify(
                       "Atendimento finalizado. Cliente e histórico preservados.",
@@ -243,6 +315,23 @@ export default function Conversation() {
               const n = e.currentTarget;
               stick.current =
                 n.scrollHeight - n.clientHeight - n.scrollTop < 80;
+              if (
+                !skipAutoRead.current &&
+                stick.current &&
+                store.cloud &&
+                !viewedRequest.current &&
+                unreadIds.length &&
+                document.visibilityState === "visible" &&
+                document.hasFocus()
+              ) {
+                viewedRequest.current = true;
+                store
+                  .setViewed(c.id, unreadIds, true)
+                  .catch((error) => ui.notify(error.message))
+                  .finally(() => {
+                    viewedRequest.current = false;
+                  });
+              }
             }}
             onLoadCapture={() => {
               if (stick.current && listRef.current)
@@ -304,6 +393,7 @@ export default function Conversation() {
             <div className="closed-actions">
               <button
                 className="primary"
+                disabled={store.cloud}
                 onClick={() =>
                   ui.setDialog({ type: "whatsapp", contactId: c.id })
                 }
@@ -318,6 +408,11 @@ export default function Conversation() {
               </button>
             </div>
           </div>
+        ) : store.cloud ? (
+          <p className="library-info">
+            O histórico está salvo na nuvem. O envio de mensagens pelo Klivo
+            ainda não está habilitado.
+          </p>
         ) : (
           <Composer
             key={c.id}
@@ -326,7 +421,7 @@ export default function Conversation() {
             onCancelReply={() => setReply(null)}
           />
         )}{" "}
-        {Crm.isAdmin(actor) && (
+        {Crm.isAdmin(actor) && !store.cloud && (
           <details className="demo-simulator">
             <summary>Testar recebimento · demonstração</summary>
             <p>Uma mensagem simulada renova a janela do cliente.</p>

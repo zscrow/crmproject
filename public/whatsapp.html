@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>WhatsApp de teste | Klivo</title>
+    <link rel="stylesheet" href="/legal.css" />
+    <style>
+      label {
+        display: block;
+        margin: 16px 0;
+      }
+      input,
+      textarea,
+      button {
+        font: inherit;
+        padding: 12px;
+        border: 1px solid #b6cac4;
+        border-radius: 8px;
+      }
+      input,
+      textarea {
+        display: block;
+        width: 100%;
+        margin-top: 6px;
+      }
+      button {
+        background: #086e60;
+        color: white;
+        cursor: pointer;
+        margin: 6px 6px 6px 0;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      article {
+        border-top: 1px solid #ddd;
+        padding: 16px 0;
+      }
+      article p {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      #feedback {
+        white-space: pre-wrap;
+      }
+      small {
+        display: block;
+        color: #536772;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <script src="/whatsapp-test.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a href="/">Klivo</a>
+      <nav><a href="/">Voltar ao CRM</a></nav>
+    </header>
+    <main>
+      <h1>WhatsApp de teste</h1>
+      <p>
+        Envie mensagens para seu destinatário autorizado e consulte eventos
+        recebidos no Cloudflare.
+      </p>
+      <p id="login">Entre com sua conta administradora no <a href="/">Klivo</a> para acessar este painel.</p>
+      <p id="feedback" role="status" aria-live="polite"></p>
+      <section id="panel" hidden>
+        <p id="connection" class="notice"></p>
+        <button id="logout">Sair</button>
+        <h2>Enviar mensagem</h2>
+        <p>
+          Somente para o destinatário de teste configurado. O texto livre
+          depende da janela de atendimento da Meta.
+        </p>
+        <form id="send">
+          <label
+            >Mensagem<textarea
+              id="text"
+              rows="4"
+              maxlength="4096"
+            ></textarea></label
+          ><button id="send-text" type="submit">Enviar texto</button
+          ><button id="hello" type="button">Enviar modelo Hello World</button>
+        </form>
+        <h2>Eventos recebidos</h2>
+        <p>
+          Eventos disponíveis nos 10 recebimentos mais recentes. Testes do
+          painel da Meta também aparecem aqui. A ausência de respostas pode
+          decorrer das restrições de publicação da Meta.
+        </p>
+        <button id="refresh">Atualizar eventos</button>
+        <div id="events"></div>
+      </section>
+    </main>
+    <footer>
+      <a href="/privacidade.html">Privacidade</a> ·
+      <a href="/exclusao-de-dados.html">Excluir dados</a>
+    </footer>
+  </body>
+</html>

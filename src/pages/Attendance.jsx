@@ -10,7 +10,8 @@ export default function Attendance() {
   const [mineOnly, setMineOnly] = useState(false),
     [sector, setSector] = useState(""),
     [query, setQuery] = useState(""),
-    [unanswered, setUnanswered] = useState(false);
+    [unanswered, setUnanswered] = useState(false),
+    [unreadOnly, setUnreadOnly] = useState(false);
   const shelf = useRef(),
     drag = useRef(null);
   const open = visible.filter((c) => c.sessionState === "open");
@@ -31,6 +32,7 @@ export default function Attendance() {
       (!mineOnly || c.assigneeId === actor.id) &&
       (!effectiveSector || c.sector === effectiveSector) &&
       (!unanswered || Service.isWaiting(c)) &&
+      (!unreadOnly || c.unreadCount > 0) &&
       `${c.name} ${c.phone} ${c.company}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -147,7 +149,14 @@ export default function Attendance() {
         >
           Somente sem resposta
         </button>
-        {(query || effectiveSector || mineOnly || unanswered) && (
+        <button
+          className={`unanswered-filter ${unreadOnly ? "active" : ""}`}
+          aria-pressed={unreadOnly}
+          onClick={() => setUnreadOnly(!unreadOnly)}
+        >
+          Somente não lidas
+        </button>
+        {(query || effectiveSector || mineOnly || unanswered || unreadOnly) && (
           <button
             className="clear-service"
             onClick={() => {
@@ -155,6 +164,7 @@ export default function Attendance() {
               setSector("");
               setMineOnly(false);
               setUnanswered(false);
+              setUnreadOnly(false);
             }}
           >
             Limpar filtros
@@ -210,6 +220,14 @@ export function ServiceCard({ contact: c }) {
             <b>{c.name}</b>
             <small>{c.phone}</small>
           </span>
+          {!!c.unreadCount && (
+            <span
+              className="unread-count"
+              aria-label={`${c.unreadCount} mensagens não lidas`}
+            >
+              {c.unreadCount}
+            </span>
+          )}
           {status === "ending" && (
             <i
               className="ending-indicator"

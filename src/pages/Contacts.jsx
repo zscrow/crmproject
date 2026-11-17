@@ -68,13 +68,17 @@ export default function Contacts() {
           {Crm.capability(actor, "exportClients") && (
             <button
               className="export"
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await actions.logExport("clientes");
+                } catch (error) {
+                  return ui.notify(error.message);
+                }
                 download(
                   csv(visible),
-                  "clientes-zapcaster.csv",
+                  "clientes-klivo.csv",
                   "text/csv;charset=utf-8",
                 );
-                actions.logExport("clientes");
               }}
             >
               <Icon name="download" />
@@ -178,7 +182,13 @@ export default function Contacts() {
                   className={`favorite ${c.favorite ? "is-favorite" : ""}`}
                   aria-label={`${c.favorite ? "Remover dos favoritos" : "Favoritar"} ${c.name}`}
                   aria-pressed={!!c.favorite}
-                  onClick={() => actions.favorite(c.id)}
+                  onClick={async () => {
+                    try {
+                      await actions.favorite(c.id);
+                    } catch (error) {
+                      ui.notify(error.message);
+                    }
+                  }}
                 >
                   <Icon name="star" />
                 </button>

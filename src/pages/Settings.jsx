@@ -3,7 +3,7 @@ import { useCrm, useUi } from "../context.jsx";
 import Crm from "../domain/crm.mjs";
 import { Avatar, Heading, Icon } from "../components/UI.jsx";
 export default function Settings() {
-  const { state, actor, actions } = useCrm(),
+  const { state, actor, actions, store } = useCrm(),
     ui = useUi();
   const [data, setData] = useState({
     name: actor.name,
@@ -55,10 +55,10 @@ export default function Settings() {
       </div>
       <form
         className="surface settings-form"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
           try {
-            actions.settings(data);
+            await actions.settings(data);
             ui.notify("Perfil atualizado");
           } catch (error) {
             ui.notify(error.message);
@@ -82,6 +82,7 @@ export default function Settings() {
             <input
               type={type}
               required
+              readOnly={store.cloud && key==='name'}
               value={data[key]}
               onChange={(e) => setData({ ...data, [key]: e.target.value })}
             />
@@ -94,9 +95,12 @@ export default function Settings() {
             O receptor de webhooks está disponível em /webhooks/whatsapp.
             Configure a URL HTTPS pública e o token de verificação no painel da
             Meta e assine o campo messages. Os eventos são armazenados no
-            servidor; as conversas desta demonstração continuam locais.
+            servidor. Os dados desta empresa são salvos na nuvem; a conexão dos
+            eventos do WhatsApp com as conversas será feita na próxima etapa.
           </p>
-          <span className="tag lead">Ativação na Meta pendente</span>
+          <a className="secondary" href="/whatsapp.html">
+            Abrir WhatsApp de teste
+          </a>
         </div>
       </form>
     </>

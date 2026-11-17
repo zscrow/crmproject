@@ -1,9 +1,16 @@
 let databasePromise;
+let databaseName = "klivo-media";
+export function setMediaAccount(id) {
+  revokeAssetUrls();
+  if (databasePromise) databasePromise.then((db) => db.close()).catch(() => {});
+  databasePromise = undefined;
+  databaseName = "klivo-media-" + id;
+}
 const urls = new Map();
 export function mediaDatabase() {
   if (!databasePromise)
     databasePromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open("zapcaster-media", 1);
+      const request = indexedDB.open(databaseName, 1);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains("assets"))
           request.result.createObjectStore("assets", { keyPath: "id" });

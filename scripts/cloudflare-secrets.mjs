@@ -16,8 +16,6 @@ const wrangler = spawn(
     "node_modules/wrangler/bin/wrangler.js",
     "secret",
     "bulk",
-    "--profile",
-    "zapcaster",
   ],
   {
     stdio: ["pipe", "inherit", "inherit"],

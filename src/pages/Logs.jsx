@@ -33,9 +33,13 @@ export default function Logs() {
       >
         <button
           className="secondary"
-          onClick={() => {
-            actions.logExport("logs");
-            download(JSON.stringify(entries, null, 2), "zapcaster-logs.json");
+          onClick={async () => {
+            try {
+              await actions.logExport("logs");
+            } catch (error) {
+              return ui.notify(error.message);
+            }
+            download(JSON.stringify(entries, null, 2), "klivo-logs.json");
           }}
         >
           <Icon name="download" />

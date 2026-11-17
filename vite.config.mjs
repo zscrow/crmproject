@@ -6,7 +6,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4173,
     strictPort: true,
-    proxy: { "/webhooks/whatsapp": "http://127.0.0.1:3001" },
+    proxy: { "/webhooks/whatsapp": "http://127.0.0.1:3001", "/api": {target:"http://127.0.0.1:8788", cookieDomainRewrite:""} },
   },
   preview: { host: "127.0.0.1", port: 4173, strictPort: true },
   test: {

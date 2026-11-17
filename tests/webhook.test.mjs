@@ -180,7 +180,7 @@ test("does not acknowledge a delivery until storage completes", async (t) => {
 });
 
 test("persists batches and deduplicates messages across retries and regrouped deliveries after restart", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "zapcaster-webhook-"));
+  const dir = mkdtempSync(join(tmpdir(), "klivo-webhook-"));
   const filename = join(dir, "inbox.sqlite");
   let store;
   let db;

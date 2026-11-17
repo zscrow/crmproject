@@ -192,8 +192,12 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
     const sender = actor.id;
     setBusy(true);
     try {
+      if (store.cloud)
+        throw new Error(
+          "O envio pelo WhatsApp será conectado na próxima etapa. Seu rascunho foi preservado.",
+        );
       const attachments = await persistAttachments(files);
-      actions.send(c.id, text, attachments, sender, reply?.messageId);
+      await actions.send(c.id, text, attachments, sender, reply?.messageId);
       onCancelReply?.();
       setCommands(null);
       setText("");

@@ -48,7 +48,7 @@ export default function Templates() {
           ? "Templates disponíveis para consulta e uso nos atalhos. O administrador controla quem pode editar."
           : tab === "quick"
             ? "Digite um atalho completo, como /ola, na conversa. Ele se transforma no texto automaticamente, sem Enter. Configure aqui o Pix e os demais campos personalizados."
-            : "Cadastros locais são rascunhos. O envio real fora das 24h exige aprovação pela Meta. Nesta prévia, modelos podem ser simulados sem envio ou cobrança."}
+            : "Os rascunhos são salvos na empresa. O envio real exige aprovação do modelo e a conexão da conta do WhatsApp, prevista na próxima etapa."}
       </div>
       <div className="message-library-grid">
         {list.map((t) => (
@@ -60,7 +60,7 @@ export default function Templates() {
                   ? "/" + t.shortcut
                   : t.status === "example"
                     ? "Exemplo · demo"
-                    : "Rascunho local"}
+                    : "Rascunho"}
               </span>
             </header>
             <p>{t.body}</p>

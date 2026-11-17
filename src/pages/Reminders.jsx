@@ -57,7 +57,13 @@ export default function Reminders() {
                   <div className="reminder-item-actions">
                     <button
                       className="secondary"
-                      onClick={() => actions.toggleReminder(r.id)}
+                      onClick={async () => {
+                        try {
+                          await actions.toggleReminder(r.id);
+                        } catch (error) {
+                          ui.notify(error.message);
+                        }
+                      }}
                     >
                       {done ? "Reabrir" : "Concluir"}
                     </button>

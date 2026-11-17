@@ -12,6 +12,12 @@ import Settings from "./pages/Settings.jsx";
 import Reminders from "./pages/Reminders.jsx";
 import DialogRouter from "./components/dialogs/DialogRouter.jsx";
 import FileViewer from "./components/FileViewer.jsx";
+import { AccountControls, useAuth } from "./Auth.jsx";
+import {
+  CloudControls,
+  WorkspaceOnboarding,
+  InboxLabel,
+} from "./CloudWorkspace.jsx";
 
 function UiProvider({ children }) {
   const { store } = useCrm();
@@ -132,8 +138,9 @@ function UiProvider({ children }) {
   );
 }
 function Workspace() {
-  const { state, actions, actor, visible } = useCrm(),
+  const { state, actions, actor, visible, store } = useCrm(),
     ui = useUi();
+  const session = useAuth();
   const admin = Crm.isAdmin(actor);
   const canLogs = Crm.capability(actor, "viewLogs");
   const items = [
@@ -199,8 +206,8 @@ function Workspace() {
             ui.navigate("attendance");
           }}
         >
-          <span className="brand-icon">Z</span>
-          ZapCaster
+          <span className="brand-icon">K</span>
+          Klivo
         </a>
         <div className="workspace">
           <span className="workspace-logo">M</span>
@@ -239,7 +246,9 @@ function Workspace() {
           <div className="connection">
             <i />
             <b>WhatsApp Business</b>
-            <small>Integração em preparação</small>
+            <small>
+              <InboxLabel />
+            </small>
           </div>
           <button className="user" onClick={() => ui.navigate("settings")}>
             <Avatar contact={{ name: actor.name, color: "blue" }} />
@@ -259,6 +268,8 @@ function Workspace() {
             <b>{titles[ui.page] || "Lembretes"}</b>
           </div>
           <div className="top-actions">
+            <CloudControls />
+            <AccountControls />
             <button
               className="theme-toggle secondary"
               onClick={() =>
@@ -267,23 +278,28 @@ function Workspace() {
             >
               {state.theme === "dark" ? "☀ Tema claro" : "☾ Tema escuro"}
             </button>
-            <label className="agent-switcher">
-              <span>Atendente · demo</span>
-              <select
-                aria-label="Atendente em uso"
-                value={actor.id}
-                onChange={(e) => actions.setAgent(e.target.value)}
-              >
-                {state.team.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {!store.cloud && (
+              <label className="agent-switcher">
+                <span>Atendente · demo</span>
+                <select
+                  aria-label="Atendente em uso"
+                  value={actor.id}
+                  onChange={(e) => actions.setAgent(e.target.value)}
+                >
+                  {state.team.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
         </header>
         <div className="content" id="main-content" tabIndex={-1}>
+          {store.cloud && session && (
+            <WorkspaceOnboarding user={session.user} store={store} />
+          )}
           {ui.page === "attendance" ? (
             <Attendance />
           ) : ui.page === "contacts" ? (
@@ -305,7 +321,7 @@ function Workspace() {
           )}
         </div>
         <footer>
-          Feito para aproximar pessoas.<span>zapCaster © 2026</span>
+          Feito para aproximar pessoas.<span>Klivo © 2026</span>
         </footer>
       </main>
     </>

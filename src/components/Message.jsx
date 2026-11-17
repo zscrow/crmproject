@@ -89,6 +89,13 @@ function Attachment({ attachment: a, contactId, sender }) {
   );
 }
 export default function Message({ message, contactId, messageId, onReply }) {
+  const ui = useUi(),
+    [copyState, setCopyState] = useState("");
+  useEffect(() => {
+    if (!copyState) return;
+    const timer = setTimeout(() => setCopyState(""), 2500);
+    return () => clearTimeout(timer);
+  }, [copyState]);
   const m = Session.normalize(message);
   if (m.direction === "system")
     return <div className="conversation-event">{m.text}</div>;
@@ -173,6 +180,37 @@ export default function Message({ message, contactId, messageId, onReply }) {
           sender={m.senderName}
         />
       ))}
+      <div className="message-footer-actions">
+        {m.direction === "inbound" && Object.hasOwn(m, "viewedAt") && (
+          <span className={m.viewedAt ? "message-viewed" : "message-unviewed"}>
+            {m.viewedAt ? "Lida por você" : "Não lida"}
+          </span>
+        )}
+        {text && (
+          <button
+            type="button"
+            className="copy-message-button"
+            aria-label="Copiar mensagem"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(text);
+                setCopyState("copied");
+                ui?.notify?.("Mensagem copiada.");
+              } catch {
+                setCopyState("error");
+              }
+            }}
+          >
+            {copyState === "copied" ? "Copiada" : "Copiar"}
+          </button>
+        )}
+        {copyState === "error" && (
+          <span role="alert">
+            Selecione o texto e copie; a área de transferência não está
+            disponível.
+          </span>
+        )}
+      </div>
     </article>
   );
 }
