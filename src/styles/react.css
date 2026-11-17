@@ -640,6 +640,35 @@ html[data-theme="dark"] .conversation-day-label > span {
   border-color: #355271;
   box-shadow: 0 2px 9px #0003;
 }
+@media (prefers-reduced-motion: no-preference) {
+  .conversation-layout {
+    transform-origin: center;
+    animation: conversation-enter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .conversation-layout.conversation-closing {
+    animation: conversation-exit 300ms cubic-bezier(0.64, 0, 0.78, 0) forwards;
+  }
+}
+@keyframes conversation-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes conversation-exit {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
 .conversation-history {
   position: relative;
   display: flex;

@@ -6,6 +6,15 @@
     "predev": "node prepare-react-runtime.cjs",
     "dev": "vite",
     "start": "npm run dev",
+    "webhook": "node --env-file-if-exists=.env server/index.mjs",
+    "webhook:dev": "wrangler dev --port 8787",
+    "webhook:deploy": "node scripts/cloudflare-deploy.mjs",
+    "webhook:secrets": "node scripts/cloudflare-secrets.mjs",
+    "webhook:import:prepare": "node --env-file-if-exists=.env scripts/cloudflare-import.mjs",
+    "webhook:migrate:local": "wrangler d1 migrations apply zapcaster-webhooks --local",
+    "webhook:migrate": "wrangler d1 migrations apply zapcaster-webhooks --remote --profile zapcaster",
+    "webhook:types": "wrangler types worker-configuration.d.ts",
+    "webhook:check": "npm run webhook:types && tsc -p tsconfig.worker.json",
     "prebuild": "node prepare-react-runtime.cjs",
     "build": "vite build",
     "preview": "vite preview",
@@ -19,12 +28,21 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261116.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.9",
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-react": "^6.3.0",
     "jsdom": "^31.0.0",
+    "miniflare": "^5.20261116.0-beta",
     "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
     "vite": "^8.3.7",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "wrangler": "^4.163.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261116.1": true
   }
 }

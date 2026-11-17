@@ -71,12 +71,24 @@
   border-left: 5px solid #497bb9;
   border-radius: 14px;
   transition:
+    transform 0.3s cubic-bezier(0.25, 0.45, 0.45, 0.95),
     box-shadow 0.15s,
     border-color 0.15s;
 }
 .service-tile:hover {
   box-shadow: 0 5px 16px #243c6114;
   border-color: #7b9fc9;
+}
+.conversation-person {
+  transition:
+    transform 0.3s cubic-bezier(0.25, 0.45, 0.45, 0.95),
+    background-color 0.15s;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .service-tile:hover,
+  .conversation-person:hover {
+    transform: translateY(-4px);
+  }
 }
 .service-tile.state-waiting,
 .service-tile.state-ending {

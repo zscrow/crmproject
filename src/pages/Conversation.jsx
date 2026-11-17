@@ -60,7 +60,16 @@ export default function Conversation() {
   };
   return (
     <div
-      className={`conversation-layout ${showList ? "" : "conversation-selected"} ${details ? "show-customer" : ""}`}
+      key={c.id}
+      className={`conversation-layout ${showList ? "" : "conversation-selected"} ${details ? "show-customer" : ""} ${ui.conversationClosing ? "conversation-closing" : ""}`}
+      inert={ui.conversationClosing}
+      onAnimationEnd={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          event.animationName === "conversation-exit"
+        )
+          ui.finishNavigation();
+      }}
     >
       <aside className="conversation-list">
         <div className="conversation-list-title">
