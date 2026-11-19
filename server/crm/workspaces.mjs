@@ -4,6 +4,7 @@ import { createCrmStore, initialState } from "../../src/store.mjs";
 import Crm from "../../src/domain/crm.mjs";
 import { digest, randomToken } from "./auth.mjs";
 import { syncInbound } from "./inbound.mjs";
+import { recipientKey } from "../../src/domain/communication.mjs";
 const memory = { getItem: () => null, setItem: () => {} };
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -118,6 +119,15 @@ export function visibleState(state, userId) {
           (e) => e.actorId === userId || ids.has(String(e.contactId)),
         )
       : [];
+    const recipients = new Set(copy.contacts.map(recipientKey).filter(Boolean));
+    copy.communication = Object.fromEntries(
+      Object.entries(state.communication || {}).filter(([key]) =>
+        recipients.has(key),
+      ),
+    );
+    copy.communicationHistory = (state.communicationHistory || []).filter(
+      (event) => recipients.has(event.recipientKey),
+    );
   }
   return copy;
 }
@@ -183,6 +193,7 @@ const actions = new Set([
   "settings",
   "addSector",
   "logExport",
+  "recordCommunication",
 ]);
 function argsFor(action, args, state, user) {
   if (!Array.isArray(args) || args.length > 6)

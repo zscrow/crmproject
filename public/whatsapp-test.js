@@ -65,9 +65,9 @@ async function connect() {
   try {
     const status = await api("status");
     el("connection").textContent = status.sendingConfigured
-      ? `Envio configurado para ${status.recipient}. A Meta ainda validará as permissões a cada envio.`
+      ? `Integração configurada. Envios disponíveis somente nas conversas do Klivo.`
       : "Banco conectado. Faltam credenciais de envio ou destinatário de teste no servidor.";
-    el("send-text").disabled = el("hello").disabled = !status.sendingConfigured;
+
     el("login").hidden = true;
     el("panel").hidden = false;
     await refresh();
@@ -88,23 +88,3 @@ el("refresh").onclick = () =>
   refresh()
     .then(() => feedback("Eventos atualizados."))
     .catch((error) => feedback(error.message));
-async function send(type) {
-  el("send-text").disabled = el("hello").disabled = true;
-  try {
-    const result = await api("send", { type, text: el("text").value });
-    feedback(
-      "Mensagem aceita pela Meta. Isso ainda não confirma a entrega. ID: " +
-        result.id,
-    );
-    if (type === "text") el("text").value = "";
-  } catch (error) {
-    feedback(error.message);
-  } finally {
-    el("send-text").disabled = el("hello").disabled = false;
-  }
-}
-el("send").onsubmit = (e) => {
-  e.preventDefault();
-  send("text");
-};
-el("hello").onclick = () => send("template");

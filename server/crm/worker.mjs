@@ -66,30 +66,6 @@ export async function recentEvents(db, phoneId) {
   }
   return events.slice(0, 100);
 }
-export function makeMessage(input, recipient) {
-  if (!/^\d{8,15}$/.test(recipient || ""))
-    throw new Error("Configure o destinatário de teste no servidor.");
-  if (input.type === "template")
-    return {
-      messaging_product: "whatsapp",
-      to: recipient,
-      type: "template",
-      template: { name: "hello_world", language: { code: "en_US" } },
-    };
-  if (
-    input.type !== "text" ||
-    typeof input.text !== "string" ||
-    !input.text.trim() ||
-    input.text.length > 4096
-  )
-    throw new Error("Informe um texto entre 1 e 4096 caracteres.");
-  return {
-    messaging_product: "whatsapp",
-    to: recipient,
-    type: "text",
-    text: { body: input.text.trim() },
-  };
-}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -100,7 +76,8 @@ export default {
       const user = await sessionUser(request, env.DB);
       if (!user)
         return json({ error: "Entre na sua conta para continuar." }, 401);
-      if (url.pathname.startsWith('/api/workspace')) return await workspaceRoute(request,env,user);
+      if (url.pathname.startsWith("/api/workspace"))
+        return await workspaceRoute(request, env, user);
       if (user.role !== "owner")
         return json(
           {
@@ -136,67 +113,13 @@ export default {
           events: await recentEvents(env.DB, env.WHATSAPP_PHONE_NUMBER_ID),
         });
       if (url.pathname === "/api/whatsapp/send" && request.method === "POST") {
-        if (
-          !env.META_ACCESS_TOKEN ||
-          !/^\d+$/.test(env.WHATSAPP_PHONE_NUMBER_ID || "")
-        )
-          return json(
-            {
-              error: "Configure o token e o ID do número de teste no servidor.",
-            },
-            503,
-          );
-        const raw = await request.text();
-        if (raw.length > 12000)
-          return json({ error: "Mensagem muito grande." }, 413);
-        let message;
-        try {
-          message = makeMessage(JSON.parse(raw), env.WHATSAPP_TEST_RECIPIENT);
-        } catch {
-          return json(
-            {
-              error:
-                "Confira o texto e a configuração do destinatário de teste.",
-            },
-            400,
-          );
-        }
-        const response = await fetch(
-          `https://graph.facebook.com/v27.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+        return json(
           {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${env.META_ACCESS_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(message),
+            error:
+              "O envio pelo painel antigo foi desativado. Use a conversa do cliente no Klivo para respeitar as preferências de contato.",
           },
+          410,
         );
-        const result = await response.json();
-        if (!response.ok) {
-          const code = result.error?.code;
-          const hints = {
-            190: "O token da Meta expirou ou é inválido. Gere um novo e atualize o servidor.",
-            131030:
-              "Adicione e confirme o destinatário na lista de testes da Meta.",
-            131047:
-              "A janela de atendimento está fechada. Use o modelo Hello World.",
-            10: "A Meta não autorizou esta operação. Confira as permissões do aplicativo.",
-            100: "Confira o ID do número e o destinatário configurados.",
-          };
-          return json(
-            {
-              error:
-                hints[code] ||
-                "A Meta recusou o envio. Confira o painel do aplicativo.",
-              code,
-            },
-            502,
-          );
-        }
-        if (!result.messages?.[0]?.id)
-          return json({ error: "A Meta não confirmou o envio." }, 502);
-        return json({ id: result.messages[0].id, status: "accepted" });
       }
       return json({ error: "Rota não encontrada." }, 404);
     } catch {

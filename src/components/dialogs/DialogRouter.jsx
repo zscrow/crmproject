@@ -1,4 +1,5 @@
 import MetaTemplateDialog from "../MetaTemplates.jsx";
+import CommunicationPreferences from "../CommunicationPreferences.jsx";
 import { useState } from "react";
 import Modal, { ModalClose } from "../Modal.jsx";
 import { useCrm, useUi } from "../../context.jsx";
@@ -24,6 +25,8 @@ export default function DialogRouter() {
       ? !Crm.capability(actor, "editTemplates")
       : false;
   if (restricted) return null;
+  if (d.type === "communication")
+    return <CommunicationPreferences key={String(c.id)} contact={c} />;
   if (d.type === "whatsapp" && store.cloud)
     return <MetaTemplateDialog key={String(c.id)} contact={c} />;
   return (

@@ -1,10 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker, {
-  authorized,
-  makeMessage,
-  recentEvents,
-} from "../server/crm/worker.mjs";
+import worker, { authorized, recentEvents } from "../server/crm/worker.mjs";
 const key = "a".repeat(64);
 test("CRM API denies anonymous access and missing or short server keys", async () => {
   assert.equal(
@@ -40,22 +36,33 @@ test("CRM API denies anonymous access and missing or short server keys", async (
   assert.equal(response.status, 401);
   assert.equal(response.headers.get("cache-control"), "no-store");
 });
-test("CRM sends only to the configured recipient, validates input and isolates templates", () => {
-  const message = makeMessage(
-    { type: "text", text: " olá ", to: "attacker" },
-    "5537999999999",
+test("legacy test sender cannot bypass contact preferences even for the owner", async () => {
+  const response = await worker.fetch(
+    new Request("https://crm.test/api/whatsapp/send", {
+      method: "POST",
+      headers: {
+        Cookie: "__Host-klivo_session=" + key,
+        Origin: "https://crm.test",
+      },
+      body: JSON.stringify({ type: "template" }),
+    }),
+    {
+      DB: {
+        prepare() {
+          return {
+            bind() {
+              return this;
+            },
+            async first() {
+              return { role: "owner" };
+            },
+          };
+        },
+      },
+    },
   );
-  assert.equal(message.to, "5537999999999");
-  assert.equal(message.text.body, "olá");
-  assert.throws(() =>
-    makeMessage({ type: "text", text: "a".repeat(4097) }, "5537999999999"),
-  );
-  assert.throws(() => makeMessage({ type: "text", text: "ok" }, ""));
-  assert.equal(
-    makeMessage({ type: "template", name: "arbitrary" }, "5537999999999")
-      .template.name,
-    "hello_world",
-  );
+  assert.equal(response.status, 410);
+  assert.match((await response.json()).error, /preferências/);
 });
 test("CRM rejects foreign origins before attempting sends", async () => {
   const response = await worker.fetch(

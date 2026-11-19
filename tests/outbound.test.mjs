@@ -10,6 +10,7 @@ import {
   replyRecipient,
 } from "../server/crm/outbound.mjs";
 import { d1WebhookStore } from "../server/cloudflare/d1-store.mjs";
+import { recordCommunication } from "../src/domain/communication.mjs";
 
 test("real D1 outbound replies enforce scope and window, deduplicate and project actual delivery failures", async (t) => {
   const mf = new Miniflare(
@@ -287,6 +288,29 @@ test("real D1 outbound replies enforce scope and window, deduplicate and project
     400,
   );
   assert.equal(posts, 0);
+  assert.equal(
+    (await sendReply(env, c, user, templateBody, templateFetcher)).status,
+    403,
+  );
+  assert.equal(posts, 0, "a checked box alone cannot authorize a template");
+  recordCommunication(
+    c.state,
+    c.state.contacts[0],
+    {
+      action: "grant",
+      scope: "UTILITY",
+      source: "whatsapp",
+      occurredAt: new Date(Date.now() - 1000).toISOString(),
+      purpose: "Atualizações do pedido",
+      evidence: "Autorização no formulário do pedido de teste",
+    },
+    c.state.team[0],
+  );
+  await db
+    .prepare("UPDATE klivo_workspaces SET state_json=? WHERE id=?")
+    .bind(JSON.stringify(c.state), c.workspace.id)
+    .run();
+  c = await workspaceFor(db, user);
   assert.equal(
     (await sendReply(env, c, user, templateBody, templateFetcher)).status,
     200,

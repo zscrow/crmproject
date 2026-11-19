@@ -102,6 +102,7 @@ export function createCloudStore(initial) {
       "settings",
       "addSector",
       "logExport",
+      "recordCommunication",
     ].map((name) => [name, action(name)]),
   );
   actions.expire = () => 0;

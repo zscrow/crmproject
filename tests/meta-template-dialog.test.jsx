@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { StoreContext, UiContext } from "../src/context.jsx";
 import { createCrmStore, initialState } from "../src/store.mjs";
 import MetaTemplateDialog from "../src/components/MetaTemplates.jsx";
+import { recordCommunication } from "../src/domain/communication.mjs";
 test("Meta template dialog requires consent, previews variables and preserves inputs on rejection", async () => {
   const store = createCrmStore({
     storage: localStorage,
@@ -46,10 +47,24 @@ test("Meta template dialog requires consent, previews variables and preserves in
     .fn()
     .mockRejectedValue(new Error("Restrição da Meta (130497)."));
   const close = vi.fn();
+  const contact = { id: 1, name: "Ana", phone: "+5511999999999" };
+  recordCommunication(
+    store.getSnapshot(),
+    contact,
+    {
+      action: "grant",
+      scope: "UTILITY",
+      source: "form",
+      occurredAt: new Date(Date.now() - 1000).toISOString(),
+      purpose: "Atualizações sobre o pedido 123",
+      evidence: "Formulário do pedido 123 autorizado pelo cliente",
+    },
+    { id: "admin", name: "Teste", role: "Administrador" },
+  );
   render(
     <StoreContext.Provider value={store}>
       <UiContext.Provider value={{ setDialog: close, notify: vi.fn() }}>
-        <MetaTemplateDialog contact={{ id: 1, name: "Ana", phone: "+5511" }} />
+        <MetaTemplateDialog contact={contact} />
       </UiContext.Provider>
     </StoreContext.Provider>,
   );
@@ -67,7 +82,9 @@ test("Meta template dialog requires consent, previews variables and preserves in
   });
   expect(screen.getByText("Olá Ana, pedido 123.")).toBeDefined();
   fireEvent.click(
-    screen.getByLabelText("Cliente autorizou receber este contato"),
+    screen.getByLabelText(
+      "Este envio corresponde à finalidade autorizada abaixo",
+    ),
   );
   fireEvent.click(send);
   await screen.findByText("Restrição da Meta (130497).");
@@ -83,4 +100,6 @@ test("Meta template dialog requires consent, previews variables and preserves in
     target: { value: "image" },
   });
   expect(screen.getByLabelText("URL da imagem").type).toBe("url");
+  expect(send.disabled).toBe(true);
+  expect(screen.getByText(/Registre a autorização do cliente/)).toBeDefined();
 });

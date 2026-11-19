@@ -3,6 +3,7 @@ import { useCrm, useUi, useNow } from "../context.jsx";
 import { commandSuggestions } from "../services/chat.mjs";
 import Crm from "../domain/crm.mjs";
 import Session from "../domain/session.mjs";
+import { blockedFor } from "../domain/communication.mjs";
 import { Icon } from "./UI.jsx";
 import { createRecorder } from "../services/recorder.mjs";
 import { persistAttachments } from "../services/media.mjs";
@@ -150,6 +151,10 @@ export default function Composer({ contact: c, reply, onCancelReply }) {
     if (reply) input.current?.focus();
   }, [reply]);
   function own() {
+    if (blockedFor(state, c)) {
+      ui.notify("Envio bloqueado por pedido de interrupção do cliente.");
+      return false;
+    }
     if (!Session.canReply(c) || c.sessionState !== "open") {
       ui.notify("A janela terminou. Use um modelo aprovado.");
       return false;

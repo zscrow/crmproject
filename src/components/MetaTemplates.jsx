@@ -5,6 +5,7 @@ import {
   templatePreview,
 } from "../domain/whatsapp-template.mjs";
 import Modal, { ModalClose } from "./Modal.jsx";
+import { grantFor, templatePermissionError } from "../domain/communication.mjs";
 
 export function useMetaTemplates() {
   const { store } = useCrm(),
@@ -79,7 +80,7 @@ export function MetaTemplateLibrary() {
   );
 }
 export default function MetaTemplateDialog({ contact }) {
-  const { store } = useCrm(),
+  const { store, state } = useCrm(),
     ui = useUi(),
     { templates, error: loadError, loading, reload } = useMetaTemplates();
   const [id, setId] = useState(""),
@@ -93,9 +94,15 @@ export default function MetaTemplateDialog({ contact }) {
     templates.find((t) => !t.unsupported) ||
     templates[0];
   const schema = template ? templateSchema(template) : null;
+  const permissionError = template
+    ? templatePermissionError(state, contact, template.category)
+    : "";
+  const authorization = template
+    ? grantFor(state, contact, template.category)
+    : null;
   async function submit(e) {
     e.preventDefault();
-    if (!template || busy) return;
+    if (!template || busy || permissionError) return;
     setBusy(true);
     setError("");
     try {
@@ -148,6 +155,7 @@ export default function MetaTemplateDialog({ contact }) {
                 onChange={(e) => {
                   setId(e.target.value);
                   setValues({});
+                  setConsent(false);
                   setError("");
                 }}
               >
@@ -192,8 +200,28 @@ export default function MetaTemplateDialog({ contact }) {
                 disabled={busy}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              Cliente autorizou receber este contato
+              Este envio corresponde à finalidade autorizada abaixo
             </label>
+            {authorization && (
+              <p className="library-info">
+                Finalidade autorizada: {authorization.purpose}
+              </p>
+            )}
+            {permissionError && (
+              <p role="status" className="communication-warning">
+                {permissionError}
+              </p>
+            )}
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={() =>
+                ui.setDialog({ type: "communication", contactId: contact.id })
+              }
+            >
+              Gerenciar preferências de contato
+            </button>
           </>
         )}
         {!loading && !loadError && !templates.length && (
@@ -215,7 +243,8 @@ export default function MetaTemplateDialog({ contact }) {
               !!loadError ||
               !template ||
               !!schema?.unsupported ||
-              !consent
+              !consent ||
+              !!permissionError
             }
           >
             {busy ? "Enviando…" : "Enviar template"}

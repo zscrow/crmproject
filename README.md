@@ -3,6 +3,17 @@
 CRM em React. Requer Node.js 24. Instale as dependências com `npm install` e
 inicie a interface com `npm run dev` (http://127.0.0.1:4173).
 
+As referências de políticas e as pendências da integração estão em
+[Conformidade com Meta e WhatsApp](docs/meta-conformidade.md). Consulte-as antes
+de alterar envio, cadastro de clientes ou documentos públicos.
+
+## Testar preferências de contato
+
+Execute o servidor de desenvolvimento e abra `http://127.0.0.1:4173/demo` para
+testar com dados fictícios e sem chamadas à Meta. O [roteiro de testes](docs/testes-preferencias.md)
+explica autorização por finalidade, pedidos de interrupção, retomada e os limites
+desta etapa. A rota de demonstração não é habilitada no build de produção.
+
 ## Login e contas
 
 O formulário aceita e-mail ou usuário. Quando uma conta tem `username`
@@ -111,10 +122,10 @@ entrar na conta administradora. O painel usa a mesma sessão do CRM; a chave
 antiga deixou de autorizar requisições. Os segredos da Meta ficam no servidor.
 
 O painel consulta eventos dos dez recebimentos mais recentes no mesmo D1 do
-webhook. Ele permite enviar texto ou o modelo de teste `hello_world` somente
-para `WHATSAPP_TEST_RECIPIENT`, configurado no servidor. A Meta continua
-aplicando suas restrições de destinatário, permissões, publicação e janela
-de atendimento. Uma resposta de envio aceito não confirma a entrega.
+webhook. O envio direto por esse painel foi desativado: use as conversas do CRM,
+que verificam janela, autorização e pedidos de interrupção antes do envio.
+A Meta continua aplicando suas restrições de destinatário, permissões, publicação
+e janela de atendimento. Uma resposta de envio aceito não confirma a entrega.
 O painel de testes não mantém
 histórico próprio de mensagens enviadas; os status recebidos são mostrados
 quando entregues ao webhook. Trata-se de uma ferramenta de teste de uma

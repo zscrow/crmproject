@@ -1,5 +1,6 @@
 import Crm from "../../src/domain/crm.mjs";
 import Session from "../../src/domain/session.mjs";
+import { recordInboundStop } from "../../src/domain/communication.mjs";
 const labels = {
   image: "Imagem recebida",
   audio: "Mensagem de voz recebida",
@@ -145,6 +146,7 @@ export function appendInbound(state, value, message, connection, receivedAt) {
       senderName: contact.name,
     };
   list.push(record);
+  recordInboundStop(state, contact, text, message.id, record.createdAt);
   list.sort(
     (a, b) => (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0),
   );

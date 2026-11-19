@@ -48,6 +48,14 @@ test("expired conversation requires a template and template does not reopen the 
   time += 86400001;
   store.actions.expire();
   assert.throws(() => store.actions.send(1, "Texto livre"));
+  store.actions.recordCommunication(1, {
+    action: "grant",
+    scope: "UTILITY",
+    source: "whatsapp",
+    occurredAt: new Date(time - 1000).toISOString(),
+    purpose: "Atualizações do pedido",
+    evidence: "Autorização na mensagem de teste do cliente",
+  });
   store.actions.sendTemplate(1, "wa-return-example", {}, true);
   assert.equal(store.getSnapshot().contacts[0].sessionState, "closed");
 });

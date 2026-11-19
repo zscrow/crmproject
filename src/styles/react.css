@@ -681,3 +681,45 @@ html[data-theme="dark"] .conversation-day-label > span {
   min-height: 0;
   padding-top: 20px;
 }
+.communication-warning {
+  padding: 12px;
+  border-left: 3px solid #b45309;
+  background: color-mix(in srgb, #b45309 10%, transparent);
+}
+.communication-status {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+.communication-form .react-check {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+}
+.communication-form .react-check input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.communication-history {
+  margin-top: 20px;
+}
+.communication-history article {
+  border-top: 1px solid #8884;
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+.communication-history p {
+  margin: 6px 0;
+}
+.demo-banner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  align-items: center;
+  padding: 10px 18px;
+  background: #153c2c;
+  color: #fff;
+  font-size: 13px;
+}

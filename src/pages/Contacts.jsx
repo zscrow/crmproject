@@ -3,6 +3,7 @@ import { useCrm, useUi } from "../context.jsx";
 import Crm from "../domain/crm.mjs";
 import { Avatar, Heading, Icon, Empty } from "../components/UI.jsx";
 import { csv, download } from "../services/format.mjs";
+import { fullyBlocked } from "../domain/communication.mjs";
 export default function Contacts() {
   const { state, actor, visible, actions } = useCrm(),
     ui = useUi();
@@ -13,6 +14,7 @@ export default function Contacts() {
     [sort, setSort] = useState("name");
   const allowed = Crm.allowedSectors(actor, state.sectors);
   const chosen = allowed.includes(sector) ? sector : "";
+  const active = visible.filter((c) => !fullyBlocked(state, c));
   const matches = (c) =>
     (filter !== "Favoritos" || c.favorite) &&
     (filter !== "Clientes" || c.tag === "Cliente") &&
@@ -20,6 +22,9 @@ export default function Contacts() {
   const list = visible
     .filter(
       (c) =>
+        (filter === "Descadastrados"
+          ? fullyBlocked(state, c)
+          : !fullyBlocked(state, c)) &&
         matches(c) &&
         (!chosen || c.sector === chosen) &&
         `${c.name} ${c.company} ${c.phone}`
@@ -46,7 +51,13 @@ export default function Contacts() {
       </Heading>
       <section className="contacts-panel" aria-label="Base de contatos">
         <div className="tabs">
-          {["Todos os contatos", "Clientes", "Leads", "Favoritos"].map((t) => (
+          {[
+            "Todos os contatos",
+            "Clientes",
+            "Leads",
+            "Favoritos",
+            "Descadastrados",
+          ].map((t) => (
             <button
               key={t}
               aria-pressed={filter === t}
@@ -56,12 +67,14 @@ export default function Contacts() {
               {t}
               <span>
                 {t === "Todos os contatos"
-                  ? visible.length
-                  : visible.filter((c) =>
-                      t === "Favoritos"
-                        ? c.favorite
-                        : c.tag === (t === "Clientes" ? "Cliente" : "Lead"),
-                    ).length}
+                  ? active.length
+                  : t === "Descadastrados"
+                    ? visible.length - active.length
+                    : active.filter((c) =>
+                        t === "Favoritos"
+                          ? c.favorite
+                          : c.tag === (t === "Clientes" ? "Cliente" : "Lead"),
+                      ).length}
               </span>
             </button>
           ))}
@@ -75,7 +88,7 @@ export default function Contacts() {
                   return ui.notify(error.message);
                 }
                 download(
-                  csv(visible),
+                  csv(active),
                   "clientes-klivo.csv",
                   "text/csv;charset=utf-8",
                 );
@@ -217,6 +230,15 @@ export default function Contacts() {
                 Última atividade: {c.last?.toLowerCase() || "não registrada"}
               </div>
               <div className="card-bottom">
+                <button
+                  className="secondary"
+                  aria-label={`Preferências de contato de ${c.name}`}
+                  onClick={() =>
+                    ui.setDialog({ type: "communication", contactId: c.id })
+                  }
+                >
+                  Preferências
+                </button>
                 <button
                   className="secondary"
                   aria-label={`Editar ${c.name}`}

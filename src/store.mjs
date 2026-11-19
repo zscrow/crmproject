@@ -2,6 +2,12 @@ import { messageKey, quoteMessage } from "./services/chat.mjs";
 import Session from "./domain/session.mjs";
 import Service from "./domain/service.mjs";
 import Crm from "./domain/crm.mjs";
+import {
+  recordCommunication,
+  recordInboundStop,
+  blockedFor,
+  templatePermissionError,
+} from "./domain/communication.mjs";
 
 const KEYS = {
   contacts: "zc-contacts",
@@ -17,6 +23,8 @@ const KEYS = {
   audit: "zc-audit",
   messages: "zc-messages",
   serviceSort: "zc-service-sort",
+  communication: "klivo-communication",
+  communicationHistory: "klivo-communication-history",
 };
 export const DEFAULT_SECTORS = [
   "Arte",
@@ -440,6 +448,13 @@ export function createCrmStore({
         const c = allowed(n, id),
           closed = c.sessionState !== "open";
         append(n, c, Session.receive(c, text, now()));
+        recordInboundStop(
+          n,
+          c,
+          text,
+          "simulation-" + uid(),
+          new Date(now()).toISOString(),
+        );
         if (closed)
           audit(
             n,
@@ -454,6 +469,10 @@ export function createCrmStore({
       return commit((n) => {
         const c = allowed(n, id),
           actor = actorOf(n);
+        if (blockedFor(n, c))
+          throw new Error(
+            "Envio bloqueado por pedido de interrupção do cliente.",
+          );
         if (expectedAgent && actor.id !== expectedAgent)
           throw new Error(
             "O atendente mudou. Revise a mensagem antes de enviar.",
@@ -509,6 +528,14 @@ export function createCrmStore({
         const c = allowed(n, id),
           t = n.waTemplates.find((t) => t.id === templateId && !t.archived);
         if (!t) throw new Error("Modelo não encontrado.");
+        const category =
+          {
+            Utilidade: "UTILITY",
+            Marketing: "MARKETING",
+            Autenticação: "AUTHENTICATION",
+          }[t.category] || t.category;
+        const permissionError = templatePermissionError(n, c, category);
+        if (permissionError) throw new Error(permissionError);
         const compiled = Service.compile(t.body, {
           ...(t.values || {}),
           nome: c.name,
@@ -537,6 +564,23 @@ export function createCrmStore({
           { modelo: t.title },
         );
         return message;
+      });
+    },
+    recordCommunication(id, input) {
+      return commit((n) => {
+        const c = allowed(n, id);
+        const result = recordCommunication(n, c, input, actorOf(n), now());
+        audit(
+          n,
+          "Conversas",
+          "preferencia_comunicacao",
+          input.action === "grant"
+            ? "Autorização registrada"
+            : "Pedido de interrupção registrado",
+          c,
+          { registro: result.id, finalidade: result.scope },
+        );
+        return { id: result.id };
       });
     },
     saveNote(id, note) {

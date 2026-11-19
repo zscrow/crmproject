@@ -3,6 +3,7 @@ import { useCrm, useUi, useNow } from "../context.jsx";
 import Crm from "../domain/crm.mjs";
 import Session from "../domain/session.mjs";
 import Service from "../domain/service.mjs";
+import { blockedFor, fullyBlocked } from "../domain/communication.mjs";
 import { Avatar, Icon } from "../components/UI.jsx";
 import { duration, remaining } from "../services/format.mjs";
 import { groupMessagesByDay, dayLabel } from "../services/chatDates.mjs";
@@ -89,6 +90,7 @@ export default function Conversation() {
   }, [c?.id]);
   if (!c) return null;
   const closed = c.sessionState === "closed";
+  const contactBlocked = !!blockedFor(state, c);
   const perform = async (fn) => {
     try {
       await fn();
@@ -171,6 +173,14 @@ export default function Conversation() {
             </span>
           </div>
           <div className="conversation-header-actions">
+            <button
+              className="secondary"
+              onClick={() =>
+                ui.setDialog({ type: "communication", contactId: c.id })
+              }
+            >
+              Preferências de contato
+            </button>
             {store.cloud && c.waSenderId && (
               <button
                 className="secondary"
@@ -378,7 +388,28 @@ export default function Conversation() {
             )}
           </div>
         </div>
-        {closed ? (
+        {contactBlocked ? (
+          <div className="closed-composer" role="status">
+            <b>
+              {fullyBlocked(state, c)
+                ? "Contato descadastrado"
+                : "Respostas de atendimento interrompidas"}
+            </b>
+            <p>
+              Respostas de atendimento estão bloqueadas por pedido do cliente.
+              Consulte as preferências para conferir as finalidades permitidas.
+              Uma nova mensagem não reativa a autorização automaticamente.
+            </p>
+            <button
+              className="secondary"
+              onClick={() =>
+                ui.setDialog({ type: "communication", contactId: c.id })
+              }
+            >
+              Ver preferências de contato
+            </button>
+          </div>
+        ) : closed ? (
           <div className="closed-composer">
             <b>
               {c.closedReason === "not_started"

@@ -5,6 +5,11 @@ import Session from "../../src/domain/session.mjs";
 import { quoteMessage } from "../../src/services/chat.mjs";
 import { digest } from "./auth.mjs";
 import { payloadOf } from "./inbound.mjs";
+import {
+  blockedFor,
+  templatePermissionError,
+  grantFor,
+} from "../../src/domain/communication.mjs";
 
 // Meta may omit the ninth mobile digit in Brazilian inbound wa_id values.
 // Use the configured test recipient only when both forms identify that same phone.
@@ -78,6 +83,18 @@ export async function sendReply(env, c, user, body, fetcher = fetch) {
       return fail("Esta operação já foi utilizada.", 409);
     return resultOf(previous);
   }
+  if (!isTemplate && blockedFor(c.state, contact))
+    return fail("Envio bloqueado por pedido de interrupção do cliente.", 403);
+  const pendingInbound = await env.DB.prepare(
+    "SELECT 1 AS pending FROM events e WHERE e.kind='message' AND e.account_id IN (SELECT account_id FROM klivo_whatsapp_connections WHERE workspace_id=?) AND NOT EXISTS (SELECT 1 FROM klivo_inbox_receipts r WHERE r.workspace_id=? AND r.event_id=e.id) LIMIT 1",
+  )
+    .bind(c.workspace.id, c.workspace.id)
+    .first();
+  if (pendingInbound)
+    return fail(
+      "Há mensagens recebidas aguardando atualização. Atualize antes de enviar.",
+      409,
+    );
   if (
     !isTemplate &&
     (!Session.canReply(contact) || contact.sessionState !== "open")
@@ -125,6 +142,12 @@ export async function sendReply(env, c, user, body, fetcher = fetch) {
         return fail(
           "O modelo não está mais aprovado ou não pertence a esta conta.",
         );
+      const permissionError = templatePermissionError(
+        c.state,
+        contact,
+        template.category,
+      );
+      if (permissionError) return fail(permissionError, 403);
       compiled = compileMetaTemplate(template, body.values);
     } catch (error) {
       return fail(error.message);
@@ -149,6 +172,8 @@ export async function sendReply(env, c, user, body, fetcher = fetch) {
           templateName: template.name,
           templateLanguage: template.language,
           templateConsent: true,
+          authorizationId: grantFor(c.state, contact, template.category).id,
+          authorizationScope: template.category,
         }
       : {}),
     delivery: "sending",
